@@ -46,6 +46,7 @@ string findContig(int node)
 		}
 	}
 	cout << "NOTFOUND!!";
+	exit(1);
 }
 void traverse(int node, bool isright)
 {
