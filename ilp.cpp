@@ -956,7 +956,7 @@ void showResult()
 	{
 		for (int i = 0; i < markerVars.size(); i++)
 		{
-			cout << "marker " << i << ": " << markerVars[i].get(GRB_DoubleAttr_X) << endl;
+			cout << "marker " << (i < refMarkerSize ? refMarkers[i].family : tarMarkers[i-refMarkerSize].family) << ": " << markerVars[i].get(GRB_DoubleAttr_X) << endl;
 		}
 		cout << "-----------------------Homo---------------------" << endl;
 		for (int i = 0; i < homoEdges.size(); i++)
@@ -1051,7 +1051,33 @@ void showDebugInfo(bool isdebug)
 	cout << "------------------------------------------" << endl
 		 << endl;
 }
-
+void graphDebug(void)
+{
+	if (!isdebug)
+		return;
+	printf("===== ===== ===== graphDebug ===== ===== =====\n");
+	// for (auto m: refMarkers)
+	// 	m.show();
+	// for (auto m: tarMarkers)
+	// 	m.show();
+	printf("refMarkerSize: %d, refCapSize: %d\n", refMarkerSize, refCapSize);
+	printf("tarMarkerSize: %d, tarCapSize: %d\n", tarMarkerSize, tarCapSize);
+	int nodeid = 0, offset = 0, removed = 0;
+	string nodeType = "refMarker";
+	vector<Marker>& vecInherit = refMarkers;
+	for (int i = 0; i < nodeVars.size(); i++) {
+		Marker& temp = vecInherit[nodeid];
+		removed = nodeType == "refCap" || nodeType == "tarCap" ? 999 : (int)markerVars[nodeid+offset].get(GRB_DoubleAttr_X) ;
+		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), removed, (int)nodeVars[i].get(GRB_DoubleAttr_X));
+		nodeid += nodeType == "refCap" || nodeType == "tarCap" ? 1 : i%2 == 1 ? 1 : 0 ;
+		if (nodeType == "refMarker" && nodeid == refMarkerSize)
+			nodeType = "refCap", offset += nodeid;
+		if (nodeType == "refCap" && nodeid == refMarkers.size())
+			nodeType = "tarMarker", nodeid = 0, vecInherit = tarMarkers, offset += nodeid;
+		if (nodeType == "tarMarker" && nodeid == tarMarkerSize)
+			nodeType = "tarCap";
+	}
+}
 int main(int argc, char *argv[])
 {
 	out_dir = string(argc < 4 ? "output" : argv[3]);
@@ -1093,6 +1119,7 @@ int main(int argc, char *argv[])
 		// cout << "tarPotentialAdjNumc2c: " << tarPotAdjNumc2c << endl;
 		findMax(model);
 		showResult();
+		graphDebug();
 	}
 	catch (GRBException e)
 	{
