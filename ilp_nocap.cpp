@@ -818,6 +818,17 @@ void addCycleConstraint(GRBModel &model)
 		model.addConstr(nodeVars[offset + tar1] <= (nodeVars[offset + tar2] + (1 - adjVars[i]) * (offset + tar1 + 1)));
 		model.addConstr(nodeVars[offset + tar2] <= (nodeVars[offset + tar1] + (1 - adjVars[i]) * (offset + tar2 + 1)));
 	}
+	for (int i = 0; i < markerVars.size(); i++)	// int adj same label
+	{
+		int node1 = 2*i   + i < refMarkerSize ? 0 : rc ;
+		int node2 = 2*i+1 + i < refMarkerSize ? 0 : rc ;
+		if (isdebugall)
+		{
+			cout << "int adj: node " << node1 << " <= node " << node2 << endl;
+		}
+		model.addConstr(nodeVars[node1] <= (nodeVars[node2] + (1 - markerVars[i]) * (node1 + 1)));
+		model.addConstr(nodeVars[node2] <= (nodeVars[node1] + (1 - markerVars[i]) * (node2 + 1)));
+	}
 }
 void addInternalConstraint(GRBModel &model)
 {
