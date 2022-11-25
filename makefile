@@ -6,7 +6,8 @@ CXXFLAGS = $(CFLAGS) -std=c++11
 SERVER_ONLY = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/lib
 
 #TARGETS = speedup_1 speedup_2 speedup_3 markerReorder findContigTelomere ilp ilp_nocap
-TARGETS = ilp_nocap
+#TARGETS = findContigTelomere ilp ilp_nocap
+TARGETS = findContigTelomere ilp_nocap
 BIN_DIR = bin
 OUT_DIR = output
 TEST_DIR = testcase/EI_test
@@ -20,9 +21,9 @@ mkdir:
 %: %.cpp
 	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@
 ilp: ilp.cpp
-	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(SERVER_ONLY) -lgurobi_c++ -lgurobi95
+	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(SERVER_ONLY) -lgurobi_c++ -lgurobi100
 ilp_nocap: ilp_nocap.cpp
-	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(SERVER_ONLY) -lgurobi_c++ -lgurobi95
+	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(SERVER_ONLY) -lgurobi_c++ -lgurobi100
 asdf:
 	echo asdf asdf
 run:
@@ -40,8 +41,8 @@ run_pure:
 	related_software/misJoin_intersect_v7/misJoin_intersect_v7.php $(TEST_DIR)/answerToAll $(OUT_DIR)/myScaffold.txt > $(OUT_DIR)/evaulate.txt
 run_nocap:
 	bin/ilp_nocap			$(TEST_DIR)/reference.all 		$(TEST_DIR)/query.all | tee $(OUT_DIR)/stdout.log
-#	bin/findContigTelomere	$(TEST_DIR)/query.all			$(OUT_DIR)/joins.txt			$(OUT_DIR)
-#	related_software/misJoin_intersect_v7/misJoin_intersect_v7.php $(TEST_DIR)/answerToAll $(OUT_DIR)/myScaffold.txt > $(OUT_DIR)/evaulate.txt
+	bin/findContigTelomere	$(TEST_DIR)/query.all			$(OUT_DIR)/joins.txt			$(OUT_DIR)
+	related_software/misJoin_intersect_v7/misJoin_intersect_v7.php $(TEST_DIR)/answerToAll $(OUT_DIR)/myScaffold.txt > $(OUT_DIR)/evaulate.txt
 
 test:
 	./dcj.sh $(TEST_DIR)/reference.all $(TEST_DIR)/query.all $(TEST_DIR)/answerToAll

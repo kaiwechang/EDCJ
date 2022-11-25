@@ -83,7 +83,7 @@ struct Adjacency
 
 string out_dir;
 int refAdjSize = 0, tarAdjSize = 0;
-bool isdebug = 1, isdebugadj = 0, isdebugall = 0;
+bool isdebug = 0, isdebugadj = 0, isdebugall = 0;
 vector<Marker> refMarkers, tarMarkers;
 vector<GRBVar> markerVars; // ref--tar--capRef--capTar
 vector<GRBVar> homoVars;
@@ -818,6 +818,18 @@ void addCycleConstraint(GRBModel &model)
 		model.addConstr(nodeVars[offset + tar1] <= (nodeVars[offset + tar2] + (1 - adjVars[i]) * (offset + tar1 + 1)));
 		model.addConstr(nodeVars[offset + tar2] <= (nodeVars[offset + tar1] + (1 - adjVars[i]) * (offset + tar2 + 1)));
 	}
+	return;
+	for (int i = 0; i < markerVars.size(); i++)	// int adj same label
+	{
+		int node1 = 2*i   + i < refMarkerSize ? 0 : rc ;
+		int node2 = 2*i+1 + i < refMarkerSize ? 0 : rc ;
+		if (isdebugall)
+		{
+			cout << "int adj: node " << node1 << " <= node " << node2 << endl;
+		}
+		model.addConstr(nodeVars[node1] <= (nodeVars[node2] + (1 - markerVars[i]) * (node1 + 1)));
+		model.addConstr(nodeVars[node2] <= (nodeVars[node1] + (1 - markerVars[i]) * (node2 + 1)));
+	}
 }
 void addInternalConstraint(GRBModel &model)
 {
@@ -1051,31 +1063,43 @@ void showDebugInfo(bool isdebug)
 	cout << "------------------------------------------" << endl
 		 << endl;
 }
-void graphDebug(void)
+void graphDebug(bool debug)
 {
-	if (!isdebug)
+	if (!debug)
 		return;
 	printf("===== ===== ===== graphDebug ===== ===== =====\n");
-	// for (auto m: refMarkers)
-	// 	m.show();
-	// for (auto m: tarMarkers)
-	// 	m.show();
 	printf("refMarkerSize: %d, refCapSize: %d\n", refMarkerSize, refCapSize);
 	printf("tarMarkerSize: %d, tarCapSize: %d\n", tarMarkerSize, tarCapSize);
-	int nodeid = 0, offset = 0, removed = 0;
-	string nodeType = "refMarker";
-	vector<Marker>& vecInherit = refMarkers;
-	for (int i = 0; i < nodeVars.size(); i++) {
-		Marker& temp = vecInherit[nodeid];
-		removed = nodeType == "refCap" || nodeType == "tarCap" ? 999 : (int)markerVars[nodeid+offset].get(GRB_DoubleAttr_X) ;
-		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), removed, (int)nodeVars[i].get(GRB_DoubleAttr_X));
-		nodeid += nodeType == "refCap" || nodeType == "tarCap" ? 1 : i%2 == 1 ? 1 : 0 ;
-		if (nodeType == "refMarker" && nodeid == refMarkerSize)
-			nodeType = "refCap", offset += nodeid;
-		if (nodeType == "refCap" && nodeid == refMarkers.size())
-			nodeType = "tarMarker", nodeid = 0, vecInherit = tarMarkers, offset += nodeid;
-		if (nodeType == "tarMarker" && nodeid == tarMarkerSize)
-			nodeType = "tarCap";
+	// ref
+	for (int i = 0; i < refMarkerSize*2; i++) {
+		Marker& temp = refMarkers[i/2];
+		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), (int)markerVars[i/2].get(GRB_DoubleAttr_X), (int)nodeVars[i].get(GRB_DoubleAttr_X));
+	}
+	// ref cap
+	for (int i = refMarkerSize*2; i < refMarkerSize*2+refCapSize; i++) {
+		Marker& temp = refMarkers[i-refMarkerSize];
+		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), 999, (int)nodeVars[i].get(GRB_DoubleAttr_X));
+	}
+	// tar
+	int offset = refMarkerSize*2 + refCapSize;
+	for (int i = 0; i < tarMarkerSize*2; i++) {
+		Marker& temp = tarMarkers[i/2];
+		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), (int)markerVars[i/2+refMarkerSize].get(GRB_DoubleAttr_X), (int)nodeVars[i+offset].get(GRB_DoubleAttr_X));
+	}
+	// tar cap
+	for (int i = tarMarkerSize*2; i < tarMarkerSize*2+tarCapSize; i++) {
+		Marker& temp = tarMarkers[i-tarMarkerSize];
+		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), 999, (int)nodeVars[i+offset].get(GRB_DoubleAttr_X));
+	}
+	printf("===== ===== ===== homoEdges ===== ===== =====\n");
+	for (int i = 0; i < homoEdges.size(); i++) {
+		Edge& temp = homoEdges[i];
+		printf("edge: (%d, %d), kept: %d\n", temp.node1, temp.node2, (int)homoVars[i].get(GRB_DoubleAttr_X));
+	}
+	printf("===== ===== ===== adjEdges ===== ===== =====\n");
+	for (int i = 0; i < adjEdges.size(); i++) {
+		Edge& temp = adjEdges[i];
+		printf("edge: (%d, %d), potential: %d, kept: %d\n", temp.node1, temp.node2, temp.is_potential, (int)adjVars[i].get(GRB_DoubleAttr_X));
 	}
 }
 int main(int argc, char *argv[])
@@ -1119,7 +1143,7 @@ int main(int argc, char *argv[])
 		// cout << "tarPotentialAdjNumc2c: " << tarPotAdjNumc2c << endl;
 		findMax(model);
 		showResult();
-		graphDebug();
+		graphDebug(true);
 	}
 	catch (GRBException e)
 	{
