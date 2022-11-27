@@ -279,7 +279,7 @@ void addMemberConstraint(GRBModel &model)
 }
 void addHomoVar(GRBModel &model)
 {
-	string prevContig = "NotAContig";
+/*	string prevContig = "NotAContig";
 	for (int i = 0; i < refMarkerSize; i++) //add ref capping marker
 	{
 		//telomeres
@@ -370,6 +370,7 @@ void addHomoVar(GRBModel &model)
 			refMarkers.pb(marker);
 		}
 	}
+*/
 	for (int i = 0; i < refMarkerSize + refCapSize; i++) //find same family marker pairs
 	{
 		for (int j = 0; j < tarMarkerSize + tarCapSize; j++)
@@ -559,7 +560,12 @@ void addAdjVar(GRBModel &model)
 	}
 	string prevContig = "NotAContig";
 	int currCapMarkerID = 2 * refMarkerSize;
-	for (int i = 0; i < 2 * refMarkerSize; i++) //telo with ori cap
+	for (int i = 0; i < 2 * refMarkerSize; i++) // pick telos
+		if (prevContig != nodeVecs[i].contig || i == 2 * refMarkerSize - 1 || nodeVecs[i].contig != nodeVecs[i + 1].contig) {
+			prevContig = nodeVecs[i].contig;
+			refTelomeres.pb(i);
+		}
+	/*for (int i = 0; i < 2 * refMarkerSize; i++) //telo with ori cap
 	{
 		if (prevContig != nodeVecs[i].contig || i == 2 * refMarkerSize - 1 || nodeVecs[i].contig != nodeVecs[i + 1].contig)
 		{
@@ -574,17 +580,17 @@ void addAdjVar(GRBModel &model)
 			adjVars.pb(PA);
 			refPotAdjNumt2c++;
 		}
-	}
+	}*/
 
 	for (int i = 0; i < refTelomeres.size(); i++) //telo with telo
 	{
 		for (int j = i + 1; j < refTelomeres.size(); j++)
 		{
-			if (nodeVecs[refTelomeres[i]].contig == nodeVecs[refTelomeres[j]].contig) //telos on the same contig
-				continue;
+			/*if (nodeVecs[refTelomeres[i]].contig == nodeVecs[refTelomeres[j]].contig) //telos on the same contig
+				continue;*/
 			pair<string, string> mypair(nodeVecs[refTelomeres[i]].contig, nodeVecs[refTelomeres[j]].contig);
-			if (refAdj[mypair] != 1)
-				continue;
+			/*if (refAdj[mypair] != 1)
+				continue;*/
 			Edge edge(1, refTelomeres[i], refTelomeres[j], 0);
 			if (isdebugadj)
 				edge.show();
@@ -653,7 +659,12 @@ void addAdjVar(GRBModel &model)
 	}
 	prevContig = "NotAContig";
 	currCapMarkerID = 2 * tarMarkerSize;
-	for (int i = 0; i < 2 * tarMarkerSize; i++) //telo with ori cap
+	for (int i = 0; i < 2 * tarMarkerSize; i++) // pick telos
+		if (prevContig != nodeVecs[offset + i].contig || i == 2 * tarMarkerSize - 1 || nodeVecs[offset + i].contig != nodeVecs[offset + i + 1].contig) {
+			prevContig = nodeVecs[offset + i].contig;
+			tarTelomeres.pb(i);
+		}
+	/*for (int i = 0; i < 2 * tarMarkerSize; i++) //telo with ori cap
 	{
 		if (prevContig != nodeVecs[offset + i].contig || i == 2 * tarMarkerSize - 1 || nodeVecs[offset + i].contig != nodeVecs[offset + i + 1].contig)
 		{
@@ -668,16 +679,16 @@ void addAdjVar(GRBModel &model)
 			adjVars.pb(PA);
 			tarPotAdjNumt2c++;
 		}
-	}
+	}*/
 	for (int i = 0; i < tarTelomeres.size(); i++) //telo with telo
 	{
 		for (int j = i + 1; j < tarTelomeres.size(); j++)
 		{
-			if (nodeVecs[offset + tarTelomeres[i]].contig == nodeVecs[offset + tarTelomeres[j]].contig) //telos on the same contig
-				continue;
+			/*if (nodeVecs[offset + tarTelomeres[i]].contig == nodeVecs[offset + tarTelomeres[j]].contig) //telos on the same contig
+				continue;*/
 			pair<string, string> mypair(nodeVecs[offset + tarTelomeres[i]].contig, nodeVecs[offset + tarTelomeres[j]].contig);
-			if (tarAdj[mypair] != 1)
-				continue;
+			/*if (tarAdj[mypair] != 1)
+				continue;*/
 			Edge edge(1, tarTelomeres[i], tarTelomeres[j], 0);
 			if (isdebugadj)
 				edge.show();
