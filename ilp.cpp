@@ -1108,7 +1108,8 @@ int main(int argc, char *argv[])
 	try
 	{
 		GRBEnv env = GRBEnv(true);
-		env.set("LogFile", out_dir+"/ilp.log");
+		env.set("LogToConsole", "0");
+		env.set("LogFile", out_dir+"/gurobi.log");
 		env.start();
 		GRBModel model = GRBModel(env);
 		//model.set("TimeLimit","120");

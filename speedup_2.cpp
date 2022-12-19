@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
 	}
 
 	string out_dir(argc < 4 ? "output" : argv[3]);
-	ofstream fout(out_dir+"/refmod_spd2.all");
+	ofstream fout(out_dir+"/ref_spd2.all");
 	int tmpid=1;
 	for(int i=0;i<refMarkers.size();i++)
 	{
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
 	}
 	fout.close();
 	
-	fout.open(out_dir+"/quemod_spd2.all");
+	fout.open(out_dir+"/tar_spd2.all");
 	tmpid=1;
 	for(int i=0;i<tarMarkers.size();i++)
 	{

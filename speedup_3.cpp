@@ -1023,7 +1023,7 @@ int main(int argc, char *argv[])
 	cout << "# of ref merges:" << refNumberMerge << endl;
 
 	string out_dir(argc < 4 ? "output" : argv[3]);
-	ofstream fout(out_dir+"/refmod_spd3.all");
+	ofstream fout(out_dir+"/ref_spd3.all");
 
 	int tmpid = 1;
 	for (int i = 0; i < refFamily.size(); i++)
@@ -1034,7 +1034,7 @@ int main(int argc, char *argv[])
 	}
 	fout.close();
 
-	fout.open(out_dir+"/quemod_spd3.all");
+	fout.open(out_dir+"/tar_spd3.all");
 	tmpid = 1;
 	for (int i = 0; i < tarFamily.size(); i++)
 	{

@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	fin.close();
 
 	string str(argv[1]);
-	str.replace(str.find(".all"), 4, "_mr.all");
+	//str.replace(str.find(".all"), 4, "_mr.all");
 	ofstream fout(str);
 	int tmpid=1;
 	cout<<"p1"<<endl;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	fout.close();
 
 	str = string(argv[2]);
-	str.replace(str.find(".all"), 4, "_mr.all");
+	//str.replace(str.find(".all"), 4, "_mr.all");
 	fout.open(str);
 	cout<<"p2"<<endl;
 	tmpid=1;

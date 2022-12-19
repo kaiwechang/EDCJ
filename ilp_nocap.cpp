@@ -964,7 +964,7 @@ void findMax(GRBModel &model)
 	//env0.set("TimeLimit", "3600");
 	//env1.set("TimeLimit","3600");
 	model.update();
-	model.write(out_dir+"/debug.lp");
+	//model.write(out_dir+"/debug.lp");
 	model.optimize();
 }
 
@@ -1119,7 +1119,8 @@ int main(int argc, char *argv[])
 	try
 	{
 		GRBEnv env = GRBEnv(true);
-		env.set("LogFile", out_dir+"/ilp.log");
+		env.set("LogToConsole", "0");
+		env.set("LogFile", out_dir+"/gurobi.log");
 		env.start();
 		GRBModel model = GRBModel(env);
 		//model.set("TimeLimit","120");
