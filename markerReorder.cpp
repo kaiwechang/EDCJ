@@ -19,9 +19,10 @@ struct Marker{
 		cout<<"Marker("<<id<<","<<family<<","<<contig<<")"<<endl;
 	}
 };
-int main(int argc, char *argv[])
+int markerReorder(string ref_file, string tar_file)
 {
-	ifstream fin(argv[1]);
+	cout<<"===== ===== ===== markerReorder ===== ===== ====="<<endl;
+	ifstream fin(ref_file);
 	int id,fam,tmp;
 	string contig;
 	set<int> fa,fb;
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
 		cout<<i<<" ";
 	cout<<endl;
 	fin.close();
-	fin.open(argv[2]);
+	fin.open(tar_file);
 
 	while(fin>>id>>fam>>contig>>tmp)
 	{
@@ -63,9 +64,8 @@ int main(int argc, char *argv[])
 	cout<<fa.size()<<endl;
 	fin.close();
 
-	string str(argv[1]);
-	//str.replace(str.find(".all"), 4, "_mr.all");
-	ofstream fout(str);
+	//ref_file.replace(ref_file.find(".all"), 4, "_mr.all");
+	ofstream fout(ref_file);
 	int tmpid=1;
 	cout<<"p1"<<endl;
 	for(auto m:ref)
@@ -77,9 +77,8 @@ int main(int argc, char *argv[])
 	}
 	fout.close();
 
-	str = string(argv[2]);
-	//str.replace(str.find(".all"), 4, "_mr.all");
-	fout.open(str);
+	//tar_file.replace(tar_file.find(".all"), 4, "_mr.all");
+	fout.open(tar_file);
 	cout<<"p2"<<endl;
 	tmpid=1;
 	for(auto m:tar)
@@ -92,5 +91,4 @@ int main(int argc, char *argv[])
 	cout<<"p3"<<endl;
 	//fout.close();
 	return 0;
-
 }

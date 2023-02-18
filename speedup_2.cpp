@@ -1,3 +1,4 @@
+#include "markerReorder.cpp"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -6,24 +7,7 @@
 #include <algorithm> 
 
 #define pb push_back
-#define abs(x) (x > 0 ? x : -x)
-
 using namespace std;
-
-struct Marker{
-	int id,family;
-	string contig;
-	Marker(int id_,int family_,string contig_)
-	{
-		id=id_;
-		family=family_;
-		contig=contig_;
-	}
-	void show()
-	{
-		cout<<"Marker("<<id<<","<<family<<","<<contig<<")"<<endl;
-	}
-};
 
 struct SharedSegment{//index start from 0
 	vector<int> refMarkerID,tarMarkerID;
@@ -330,5 +314,7 @@ int main(int argc, char *argv[])
 			fout<<tmpid++<<" "<<tarMarkers[i].family<<" "<<tarMarkers[i].contig<<" "<<1<<endl;
 	}
 	fout.close();
+
+	markerReorder(out_dir+"/ref_spd2.all", out_dir+"/tar_spd2.all");
 	return 0;
 }

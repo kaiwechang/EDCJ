@@ -1,9 +1,9 @@
+#include "markerReorder.cpp"
 #include <iostream>
 #include <fstream>
 #include <set>
 #include <vector>
 #define pb push_back
-#define abs(x) (x > 0 ? x : -x)
 using namespace std;
 vector<int> refFamily, tarFamily; //start with index 0(input marker id = vector index+1)
 vector<string> refContig, tarContig;
@@ -284,4 +284,7 @@ int main(int argc, char *argv[])
 			fout << tmpid++ << " " << tarFamily[i] << " " << tarContig[i] << " " << 1 << endl;
 	}
 	showSingletonPercentage();
+
+	markerReorder(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all");
+	return 0;
 }
