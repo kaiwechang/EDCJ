@@ -953,7 +953,7 @@ void findMax(GRBModel &model)
 	//env0.set("TimeLimit", "3600");
 	//env1.set("TimeLimit","3600");
 	model.update();
-	model.write(out_dir+"/debug.lp");
+	//model.write(out_dir+"/debug.lp");
 	model.optimize();
 }
 

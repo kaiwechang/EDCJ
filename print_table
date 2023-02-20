@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+
+import os, sys
+
+def read_files(tar_dir):
+	for testcase in os.listdir(tar_dir):
+		_, _, inv, dup, _, contig, _ = testcase.split("_")
+		for sub in os.listdir("%s/%s"%(tar_dir, testcase)):
+			for method in os.listdir("%s/%s/%s"%(tar_dir, testcase, sub)):
+				contig, inv, sub, dup = int(contig), int(inv), int(sub), int(dup)
+				if contig not in data:
+					data[contig] = {}
+				if inv not in data[contig]:
+					data[contig][inv] = {}
+				if sub not in data[contig][inv]:
+					data[contig][inv][sub] = {}
+				if dup not in data[contig][inv][sub]:
+					data[contig][inv][sub][dup] = {}
+				if method not in data[contig][inv][sub][dup]:
+					data[contig][inv][sub][dup][method] = {}
+				target = data[contig][inv][sub][dup][method]
+				# exec time
+				with open("%s/%s/%d/%s/time.txt"%(tar_dir, testcase, sub, method)) as file:
+					target["time"] = float(file.readline())
+				# prec
+				with open("%s/%s/%d/%s/evaulate.txt"%(tar_dir, testcase, sub, method)) as file:
+					lines = file.readlines()
+					target["scaff"] = int(lines[0].split()[1])
+					target["sens"] = float(lines[4].split()[1])
+					target["prec"] = float(lines[5].split()[1])
+					target["f_score"] = float(lines[6].split()[1])
+
+def get_dup(data):
+	for contig in sorted(data):
+		for inv in sorted(data[contig]):
+			for sub in data[contig][inv]:
+				return list(data[contig][inv][sub])
+
+def write_file(tar_dir, item):
+	with open("%s/%s.txt"%(tar_dir, item), "w") as file:
+		dup_list = get_dup(data)
+		# header
+		file.write("%12s |"%"")
+		for dup in dup_list:
+			file.write("%18s |"%("dup length %d"%dup))
+		file.write("\n%4s%4s%4s |"%("con", "inv", "sub"))
+		for dup in dup_list:
+			file.write("%9s%9s |"%("capping", "cycle"))
+		file.write("\n")
+		# content
+		for contig in sorted(data):
+			for inv in sorted(data[contig]):
+				file.write("-------------+")
+				for dup in dup_list:
+					file.write("-------------------+")
+				file.write("\n")
+				for sub in data[contig][inv]:
+					file.write("%4d%4d%4d |"%(contig, inv, sub))
+					for dup in data[contig][inv][sub]:
+						target = data[contig][inv][sub][dup]
+						fmt_str = {
+							"scaff": "%9d%9d |", 
+							"time": "%9.2f%9.2f |", 
+							"sens": "%9.3f%9.3f |", 
+							"prec": "%9.3f%9.3f |", 
+							"f_score": "%9.3f%9.3f |", 
+						}
+						file.write(fmt_str[item]%(target["pure"][item], target["nocap"][item]))
+					file.write("\n")
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		print("Please enter the target folder as an argument.")
+
+	data = {}
+	tar_dir = sys.argv[1]
+	read_files(tar_dir)
+
+	# data check
+	#import json
+	#print(json.dumps(data, sort_keys=True, indent=4))
+
+	for item in ["time", "scaff", "sens", "prec", "f_score"]:
+		write_file(tar_dir, item)

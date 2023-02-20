@@ -48,18 +48,19 @@ cycle_test:
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
-			nocap_dir=$(out_base)/$$dir/nocap/$$sub;\
+			nocap_dir=$(out_base)/$$dir/$$sub/nocap;\
 			mkdir -p $$nocap_dir;					\
 			time -f %e -o $$nocap_dir/time.txt		\
 			make run_nocap OUT_DIR=$$nocap_dir		\
 			TEST_DIR=$(test_base)/$$dir/$$sub;		\
-			pure_dir=$(out_base)/$$dir/pure/$$sub;	\
+			pure_dir=$(out_base)/$$dir/$$sub/pure;	\
 			mkdir -p $$pure_dir;					\
 			time -f %e -o $$pure_dir/time.txt		\
 			make run_pure OUT_DIR=$$pure_dir		\
 			TEST_DIR=$(test_base)/$$dir/$$sub;		\
 		done										\
 	done
+	./print_table $(out_base)
 
 .PHONY: clean
 clean:
