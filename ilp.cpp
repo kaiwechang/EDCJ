@@ -269,8 +269,8 @@ void addMemberConstraint(GRBModel &model)
 				tarMembers += (1 - markerVars[i + refMarkerSize]);
 		}
 		model.addConstr(refMembers == tarMembers);	// same gene content
-		//model.addConstr(refMembers >= 1);			// intermediate
-		model.addConstr(refMembers == min(refFamSize[*it], tarFamSize[*it])); // maximum matching
+		model.addConstr(refMembers >= 1);			// intermediate
+		//model.addConstr(refMembers == min(refFamSize[*it], tarFamSize[*it])); // maximum matching
 		//model.addConstr(refMembers == 1);			// exemplar
 
 		if (isdebug)
