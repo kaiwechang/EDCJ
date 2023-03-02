@@ -9,8 +9,8 @@ LOCAL_ONLY = -lgurobi100
 TARGETS = speedup_1 speedup_2 speedup_3 findContigTelomere ilp ilp_nocap
 BIN_DIR = bin
 OUT_DIR = output
-#TEST_DIR = ../testcase/EI_test
-TEST_DIR = ../testcase/simData_smaller/sim1
+TEST_DIR = ../testcase/EI_test
+#TEST_DIR = ../testcase/simData_smaller/sim1
 #TEST_DIR = ../testcase/simdata1/sim_1000_80_5_100_1_30/1
 
 .PHONY: all
@@ -67,7 +67,7 @@ run_spd3: mkdir
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
 
 cycle_test:
-	$(eval test_base="../testcase/format_test")
+	$(eval test_base="../testcase/rough_test")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
@@ -83,7 +83,7 @@ cycle_test:
 	./print_table $(out_base)
 
 speedup_test:
-	$(eval test_base="../testcase/format_test")
+	$(eval test_base="../testcase/simdata3")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\

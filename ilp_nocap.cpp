@@ -269,8 +269,8 @@ void addMemberConstraint(GRBModel &model)
 				tarMembers += (1 - markerVars[i + refMarkerSize]);
 		}
 		model.addConstr(refMembers == tarMembers);	// same gene content
-		model.addConstr(refMembers >= 1);			// intermediate
-		//model.addConstr(refMembers == min(refFamSize[*it], tarFamSize[*it])); // maximum matching
+		//model.addConstr(refMembers >= 1);			// intermediate
+		model.addConstr(refMembers == min(refFamSize[*it], tarFamSize[*it])); // maximum matching
 		//model.addConstr(refMembers == 1);			// exemplar
 
 		if (isdebug)
@@ -1078,39 +1078,46 @@ void graphDebug(bool debug)
 {
 	if (!debug)
 		return;
-	printf("===== ===== ===== graphDebug ===== ===== =====\n");
+	printf("\n===== ===== ===== graphDebug ===== ===== =====\n\n");
 	printf("refMarkerSize: %d, refCapSize: %d\n", refMarkerSize, refCapSize);
 	printf("tarMarkerSize: %d, tarCapSize: %d\n", tarMarkerSize, tarCapSize);
+	printf("\n idx | id family     contig | del label |\n");
+	printf("-----+----------------------+-----------+\n");
 	// ref
 	for (int i = 0; i < refMarkerSize*2; i++) {
 		Marker& temp = refMarkers[i/2];
-		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), (int)markerVars[i/2].get(GRB_DoubleAttr_X), (int)nodeVars[i].get(GRB_DoubleAttr_X));
+		printf(" %3d | %2d %6d %10s | %3d %5d |\n", i, temp.id, temp.family, temp.contig.c_str(), (int)markerVars[i/2].get(GRB_DoubleAttr_X), (int)nodeVars[i].get(GRB_DoubleAttr_X));
 	}
 	// ref cap
 	for (int i = refMarkerSize*2; i < refMarkerSize*2+refCapSize; i++) {
 		Marker& temp = refMarkers[i-refMarkerSize];
-		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), 999, (int)nodeVars[i].get(GRB_DoubleAttr_X));
+		printf(" %3d | %2d %6d %10s | %3d %5d |\n", i, temp.id, temp.family, temp.contig.c_str(), 999, (int)nodeVars[i].get(GRB_DoubleAttr_X));
 	}
+	printf("-----+----------------------+-----------+\n");
 	// tar
 	int offset = refMarkerSize*2 + refCapSize;
 	for (int i = 0; i < tarMarkerSize*2; i++) {
 		Marker& temp = tarMarkers[i/2];
-		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), (int)markerVars[i/2+refMarkerSize].get(GRB_DoubleAttr_X), (int)nodeVars[i+offset].get(GRB_DoubleAttr_X));
+		printf(" %3d | %2d %6d %10s | %3d %5d |\n", i, temp.id, temp.family, temp.contig.c_str(), (int)markerVars[i/2+refMarkerSize].get(GRB_DoubleAttr_X), (int)nodeVars[i+offset].get(GRB_DoubleAttr_X));
 	}
 	// tar cap
 	for (int i = tarMarkerSize*2; i < tarMarkerSize*2+tarCapSize; i++) {
 		Marker& temp = tarMarkers[i-tarMarkerSize];
-		printf("[%d] marker: (%d, %d, %s), removed: %d, label: %d\n", i, temp.id, temp.family, temp.contig.c_str(), 999, (int)nodeVars[i+offset].get(GRB_DoubleAttr_X));
+		printf(" %3d | %2d %6d %10s | %3d %5d |\n", i, temp.id, temp.family, temp.contig.c_str(), 999, (int)nodeVars[i+offset].get(GRB_DoubleAttr_X));
 	}
-	printf("===== ===== ===== homoEdges ===== ===== =====\n");
+	printf("\n===== ===== ===== homoEdges ===== ===== =====\n\n");
+	printf(" node1 node2 | kept |\n");
+	printf("-------------+------+\n");
 	for (int i = 0; i < homoEdges.size(); i++) {
 		Edge& temp = homoEdges[i];
-		printf("edge: (%d, %d), kept: %d\n", temp.node1, temp.node2, (int)homoVars[i].get(GRB_DoubleAttr_X));
+		printf(" %5d %5d | %4d |\n", temp.node1, temp.node2, (int)homoVars[i].get(GRB_DoubleAttr_X));
 	}
-	printf("===== ===== ===== adjEdges ===== ===== =====\n");
+	printf("\n===== ===== ===== adjEdges ===== ===== =====\n\n");
+	printf(" node1 node2 | pot kept |\n");
+	printf("-------------+----------+\n");
 	for (int i = 0; i < adjEdges.size(); i++) {
 		Edge& temp = adjEdges[i];
-		printf("edge: (%d, %d), potential: %d, kept: %d\n", temp.node1, temp.node2, temp.is_potential, (int)adjVars[i].get(GRB_DoubleAttr_X));
+		printf(" %5d %5d | %3d %4d |\n", temp.node1, temp.node2, temp.is_potential, (int)adjVars[i].get(GRB_DoubleAttr_X));
 	}
 }
 int main(int argc, char *argv[])
