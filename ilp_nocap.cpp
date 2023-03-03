@@ -270,8 +270,8 @@ void addMemberConstraint(GRBModel &model)
 		}
 		model.addConstr(refMembers == tarMembers);	// same gene content
 		//model.addConstr(refMembers >= 1);			// intermediate
-		model.addConstr(refMembers == min(refFamSize[*it], tarFamSize[*it])); // maximum matching
-		//model.addConstr(refMembers == 1);			// exemplar
+		//model.addConstr(refMembers == min(refFamSize[*it], tarFamSize[*it])); // maximum matching
+		model.addConstr(refMembers == 1);			// exemplar
 
 		if (isdebug)
 			cout << "add family " << *it << " constraint" << endl;

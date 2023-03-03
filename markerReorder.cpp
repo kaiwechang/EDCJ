@@ -6,17 +6,16 @@
 #define abs(x) (x>0?x:-x)
 using namespace std;
 struct Marker{
-	int id,family;
+	int id, family, abs_family;
 	string contig;
-	Marker(int id_,int family_,string contig_)
-	{
-		id=id_;
-		family=family_;
-		contig=contig_;
+	Marker(int id_, int family_, string contig_) {
+		id = id_;
+		family = family_;
+		abs_family = abs(family_);
+		contig = contig_;
 	}
-	void show()
-	{
-		cout<<"Marker("<<id<<","<<family<<","<<contig<<")"<<endl;
+	void show() {
+		cout<<"Marker("<<id<<", "<<family<<", "<<contig<<")"<<endl;
 	}
 };
 int markerReorder(string ref_file, string tar_file)

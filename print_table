@@ -118,5 +118,5 @@ if __name__ == "__main__":
 	for item in ["time", "scaff", "sens", "prec", "f_score"]:
 		write_file(tar_dir, item)
 
-	#for item in ["time", "scaff", "sens", "prec", "f_score"]:
-	#	draw_plot(data, item)
+	for item in ["time", "scaff", "sens", "prec", "f_score"]:
+		draw_plot(data, item)
