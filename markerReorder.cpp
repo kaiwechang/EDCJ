@@ -3,15 +3,15 @@
 #include<vector>
 #include<set>
 #define pb push_back
-#define abs(x) (x>0?x:-x)
+#define abs(a) (a > 0 ? a : -a)
 using namespace std;
 struct Marker{
-	int id, family, abs_family;
+	int id, family, absFamily;
 	string contig;
 	Marker(int id_, int family_, string contig_) {
 		id = id_;
 		family = family_;
-		abs_family = abs(family_);
+		absFamily = abs(family_);
 		contig = contig_;
 	}
 	void show() {

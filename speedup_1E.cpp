@@ -1,134 +1,113 @@
-#include "markerReorder.cpp"
 #include <iostream>
 #include <fstream>
-#include <set>
 #include <vector>
 using namespace std;
-vector<int> refFamily, tarFamily; //start with index 0(input marker id = vector index+1)
-vector<string> refContig, tarContig;
-vector<int> refMarkerNum, tarMarkerNum;
-vector<int> ref_keep, tar_keep;
-int refMarkerMax = 0, tarMarkerMax = 0;
-void showSingletonPercentage()
+
+#define max(a, b) (a > b ? a : b)
+#define abs(a) (a > 0 ? a : -a)
+
+struct Marker
 {
-	int cnt = 0, tt = 0;
-	for (int i = 0; i < refFamily.size(); i++)
-	{
-		if (refMarkerNum[abs(refFamily[i])] == 1 && tarMarkerNum[abs(refFamily[i])] == 1)
-			cnt += 2;
+	int id, family, absFamily;
+	string contig;
+	Marker(int id_, int family_, string contig_) {
+		id = id_;
+		family = family_;
+		absFamily = abs(family_);
+		contig = contig_;
 	}
-	for (int i = 0; i < refFamily.size(); i++)
-	{
-		if (tarMarkerNum[abs(refFamily[i])] != 0)
-			tt++;
+	void show() {
+		printf("Marker(%d, %d, %s)\n", id, family, contig.c_str());
 	}
-	for (int i = 0; i < tarFamily.size(); i++)
-	{
-		if (refMarkerNum[abs(tarFamily[i])] != 0)
-			tt++;
+};
+vector<Marker> refGenome, tarGenome;
+vector<int> refKeep, tarKeep;
+vector<int> refFamilySize, tarFamilySize;
+int refFamilyMax = 0, tarFamilyMax = 0;
+
+void setKeep(int i, int j, int idx, int jdx, int reversed)
+{
+	if (// check index in range
+		i   > 0 && i   < refGenome.size() &&
+		idx > 0 && idx < refGenome.size() &&
+		j   > 0 && j   < tarGenome.size() &&
+		jdx > 0 && jdx < tarGenome.size() &&
+		// same contig
+		refGenome[i].contig == refGenome[idx].contig &&
+		tarGenome[j].contig == tarGenome[jdx].contig &&
+		// same family & (not) same sign
+		refGenome[idx].family == reversed*tarGenome[jdx].family) {
+
+		refKeep[refGenome[idx].absFamily] = idx;
+		tarKeep[tarGenome[jdx].absFamily] = jdx;
 	}
-	cout << cnt << " " << tt << endl;
-	cout << cnt / (double)tt << endl;
 }
 int main(int argc, char *argv[])
 {
 	if (argc < 4) {
 		printf("[error] no ref/tar genome.\n");
-		exit(1);
+		return 0;
 	}
-	ifstream fin(argv[1]);
-	int id, family, tmp;
 	string contig;
+	int id, family, tmp;
+	ifstream fin(argv[1]);
 	while (fin >> id >> family >> contig >> tmp) {
-		refFamily.push_back(family);
-		refContig.push_back(contig);
-	}
-	fin.close();
+		refFamilyMax = max(refFamilyMax, abs(family));
+		refGenome.push_back(Marker(id, family, contig));
+	}	fin.close();
 	fin.open(argv[2]);
 	while (fin >> id >> family >> contig >> tmp) {
-		tarFamily.push_back(family);
-		tarContig.push_back(contig);
-	}
+		tarFamilyMax = max(tarFamilyMax, abs(family));
+		tarGenome.push_back(Marker(id, family, contig));
+	}	fin.close();
 
-	//count markernum
-	refMarkerNum.resize(refFamily.size() + 1);
-	for (int i : refFamily) {
-		i = abs(i);
-		refMarkerMax = refMarkerMax > i ? refMarkerMax : i;
-		refMarkerNum[i]++;
-	}
-	tarMarkerNum.resize(tarFamily.size() + 1);
-	for (int i : tarFamily) {
-		i = abs(i);
-		tarMarkerMax = tarMarkerMax > i ? tarMarkerMax : i;
-		tarMarkerNum[i]++;
-	}	showSingletonPercentage();
+	// count family size
+	refFamilySize.assign(refFamilyMax+1, 0);
+	tarFamilySize.assign(tarFamilyMax+1, 0);
+	for (Marker& m: refGenome)
+		refFamilySize[m.absFamily]++;
+	for (Marker& m: tarGenome)
+		tarFamilySize[m.absFamily]++;
 
-	ref_keep.assign(refMarkerMax+1, -1);
-	tar_keep.assign(tarMarkerMax+1, -1);
-	for (int i = 0; i < refFamily.size() - 1; i++) {
-		for (int j = 0; j < tarFamily.size() - 1; j++) {
+	refKeep.assign(refFamilyMax+1, -1);
+	tarKeep.assign(tarFamilyMax+1, -1);
+	for (int i = 0; i < refGenome.size(); i++)
+		for (int j = 0; j < tarGenome.size(); j++) {
 			// ref[i] and tar[j] not both singlton and same family
-			if (refMarkerNum[abs(refFamily[i])] > 1 || tarMarkerNum[abs(tarFamily[j])] > 1 ||
-				abs(refFamily[i]) != abs(tarFamily[j]))
+			if (refFamilySize[refGenome[i].absFamily] > 1 ||
+				tarFamilySize[tarGenome[j].absFamily] > 1 ||
+				refGenome[i].absFamily != tarGenome[j].absFamily)
 				continue;
 			// ref[i] and tar[j] same sign
-			if (refFamily[i] == tarFamily[j]) {
-				if (refContig[i] == refContig[i+1] && tarContig[j] == tarContig[j+1] &&
-					refFamily[i+1] == tarFamily[j+1]) {
-					int id1 = i+1, id2 = j+1;
-					ref_keep[abs(refFamily[id1])] = id1;
-					tar_keep[abs(tarFamily[id2])] = id2;
-				}
-				if (i > 0 && j > 0 &&
-					refContig[i-1] == refContig[i] && tarContig[j-1] == tarContig[j] &&
-					refFamily[i-1] == tarFamily[j-1]) {
-					int id1 = i-1, id2 = j-1;
-					ref_keep[abs(refFamily[id1])] = id1;
-					tar_keep[abs(tarFamily[id2])] = id2;
-				}
+			if (refGenome[i].family == tarGenome[j].family) {
+				setKeep(i, j, i+1, j+1, 1);
+				setKeep(i, j, i-1, j-1, 1);
 			} else {
-				if (j > 0 &&
-					refContig[i] == refContig[i+1] && tarContig[j] == tarContig[j-1] &&
-					refFamily[i+1] == -tarFamily[j-1]) {
-					int id1 = i+1, id2 = j-1;
-					ref_keep[abs(refFamily[id1])] = id1;
-					tar_keep[abs(tarFamily[id2])] = id2;
-				}
-				if (i > 0 &&
-					refContig[i-1] == refContig[i] && tarContig[j] == tarContig[j+1] &&
-					refFamily[i-1] == -tarFamily[j+1]) {
-					int id1 = i-1, id2 = j+1;
-					ref_keep[abs(refFamily[id1])] = id1;
-					tar_keep[abs(tarFamily[id2])] = id2;
-				}
+				setKeep(i, j, i+1, j-1, -1);
+				setKeep(i, j, i-1, j+1, -1);
 			}
 		}
-	}
 	string out_dir(argc < 4 ? "output" : argv[3]);
 	ofstream fout(out_dir+"/ref_spd1.all");
 
 	int uid = 1;
-	for (int i = 0; i < refFamily.size(); i++) {
-		int kp_idx = ref_keep[abs(refFamily[i])];
-		if (kp_idx > 0 && kp_idx != i) {
-			printf("%d: %d\n", i+1, abs(refFamily[i]));
+	for (int i = 0; i < refGenome.size(); i++) {
+		int kidx = refKeep[refGenome[i].absFamily];
+		if (kidx > 0 && kidx != i) {
+			printf("del %d: %d\n", i+1, refGenome[i].absFamily);
 			continue;
 		}
-		fout << uid++ << " " << refFamily[i] << " " << refContig[i] << " " << 1 << endl;
+		fout << uid++ << " " << refGenome[i].family << " " << refGenome[i].contig << " " << 1 << endl;
 	}	fout.close();
-
 	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
-	for (int i = 0; i < tarFamily.size(); i++) {
-		int kp_idx = tar_keep[abs(tarFamily[i])];
-		if (kp_idx > 0 && kp_idx != i) {
-			printf("%d: %d\n", i+1, abs(tarFamily[i]));
+	for (int i = 0; i < tarGenome.size(); i++) {
+		int kidx = tarKeep[tarGenome[i].absFamily];
+		if (kidx > 0 && kidx != i) {
+			printf("del %d: %d\n", i+1, tarGenome[i].absFamily);
 			continue;
 		}
-		fout << uid++ << " " << tarFamily[i] << " " << tarContig[i] << " " << 1 << endl;
-	}
-	showSingletonPercentage();
-	markerReorder(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all");
+		fout << uid++ << " " << tarGenome[i].family << " " << tarGenome[i].contig << " " << 1 << endl;
+	}	fout.close();
 	return 0;
 }

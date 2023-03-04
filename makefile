@@ -7,7 +7,7 @@ SERVER_ONLY = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/li
 LOCAL_ONLY = -lgurobi100
 
 #TARGETS = speedup_1E speedup_2 speedup_3 findContigTelomere ilp_nocap
-TARGETS = speedup_1E ilp_nocap
+TARGETS = speedup_1 speedup_1R speedup_1E ilp_nocap
 BIN_DIR = bin
 OUT_DIR = output
 #TEST_DIR = ../testcase/EI_test
@@ -22,9 +22,9 @@ mkdir:
 %: %.cpp
 	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@
 ilp: ilp.cpp
-	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(SERVER_ONLY) -lgurobi_c++
+	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(LOCAL_ONLY) -lgurobi_c++
 ilp_nocap: ilp_nocap.cpp
-	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(SERVER_ONLY) -lgurobi_c++
+	$(CXX) $(CXXFLAGS) $< -o $(BIN_DIR)/$@ -m64 -g $(LOCAL_ONLY) -lgurobi_c++
 
 .SILENT:
 
@@ -47,11 +47,14 @@ run_spd1: mkdir
 	bin/findContigTelomere	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
 
+run_spd1R: mkdir
+	bin/speedup_1R			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
+
 run_spd1E: mkdir
 	bin/speedup_1E			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
-	bin/ilp_nocap			$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	bin/findContigTelomere	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
-	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
+#	bin/ilp_nocap			$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
+#	bin/findContigTelomere	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
+#	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
 
 experiment:
 	$(eval test_base="../testcase/simdata1")
