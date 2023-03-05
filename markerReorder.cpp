@@ -14,6 +14,10 @@ struct Marker{
 		absFamily = abs(family_);
 		contig = contig_;
 	}
+	void setFamily(int newFamily) {
+		family = newFamily;
+		absFamily = abs(newFamily);
+	}
 	void show() {
 		cout<<"Marker("<<id<<", "<<family<<", "<<contig<<")"<<endl;
 	}

@@ -1,289 +1,119 @@
 #include "markerReorder.cpp"
 #include <iostream>
 #include <fstream>
-#include <set>
 #include <vector>
-#define pb push_back
-using namespace std;
-vector<int> refFamily, tarFamily; //start with index 0(input marker id = vector index+1)
-vector<string> refContig, tarContig;
-vector<int> refMarkerNum, tarMarkerNum;
-vector<bool> refIso, tarIso; //a marker is iso
-int refMarkerMax = 0, tarMarkerMax = 0;
-void showSingletonPercentage()
+using std::vector;
+using std::string;
+
+#define max(a, b) (a > b ? a : b)
+
+vector<Marker> refGenome, tarGenome;
+vector<int> refFamilySize, tarFamilySize;
+int refFamilyMax = 0, tarFamilyMax = 0, newFamily;
+
+void rename(int i, int j, int idx, int jdx, int reversed, bool& done)
 {
-	int cnt = 0, tt = 0;
-	for (int i = 0; i < refFamily.size(); i++)
-	{
-		if (refMarkerNum[abs(refFamily[i])] == 1 && tarMarkerNum[abs(refFamily[i])] == 1)
-			cnt += 2;
-	}
-	for (int i = 0; i < refFamily.size(); i++)
-	{
-		if (tarMarkerNum[abs(refFamily[i])] != 0)
-			tt++;
-	}
-	for (int i = 0; i < tarFamily.size(); i++)
-	{
-		if (refMarkerNum[abs(tarFamily[i])] != 0)
-			tt++;
-	}
-	cout << cnt << " " << tt << endl;
-	cout << cnt / (double)tt << endl;
+	if (// check index in range
+		i   > 0 && i   < refGenome.size() &&
+		idx > 0 && idx < refGenome.size() &&
+		j   > 0 && j   < tarGenome.size() &&
+		jdx > 0 && jdx < tarGenome.size() &&
+		// same contig
+		refGenome[i].contig == refGenome[idx].contig &&
+		tarGenome[j].contig == tarGenome[jdx].contig &&
+		// same family & (not) same sign
+		refGenome[idx].family == reversed*tarGenome[jdx].family &&
+		// at least one non-singleton
+		(refFamilySize[refGenome[idx].absFamily] > 1 || tarFamilySize[tarGenome[jdx].absFamily] > 1)) {
+
+		done = 0;
+		// remove original
+		refFamilySize[refGenome[idx].absFamily]--;
+		tarFamilySize[tarGenome[jdx].absFamily]--;
+		newFamily++;
+
+		refGenome[idx].setFamily(newFamily);
+		tarGenome[jdx].setFamily(
+			refGenome[i].family == -tarGenome[j].family ?
+			-newFamily : newFamily);
+
+		if (refFamilySize.size() < newFamily+1)
+			refFamilySize.resize(newFamily+1, 0);
+		refFamilySize[newFamily] = 1;
+
+		if (tarFamilySize.size() < newFamily+1)
+			tarFamilySize.resize(newFamily+1, 0);
+		tarFamilySize[newFamily] = 1;
+
+		/*printf("newFamily: %d\n", newFamily);
+		printf("ref[%d]: %d\n", idx, refGenome[idx].family);
+		printf("tar[%d]: %d\n", idx, tarGenome[jdx].family);*/
+	} 
 }
 int main(int argc, char *argv[])
 {
-	ifstream fin(argv[1]);
-	int id, family, tmp;
+	if (argc < 4) {
+		printf("[error] no ref/tar genome.\n");
+		return 0;
+	}
 	string contig;
-	while (fin >> id >> family >> contig >> tmp)
-	{
-		refFamily.pb(family);
-		refContig.pb(contig);
-	}
-	fin.close();
+	int id, family, tmp;
+	std::ifstream fin(argv[1]);
+	while (fin >> id >> family >> contig >> tmp) {
+		refFamilyMax = max(refFamilyMax, abs(family));
+		refGenome.push_back(Marker(id, family, contig));
+	}	fin.close();
 	fin.open(argv[2]);
-	while (fin >> id >> family >> contig >> tmp)
-	{
-		tarFamily.pb(family);
-		tarContig.pb(contig);
-	}
-	refMarkerNum.resize(refFamily.size() + 1);
-	refIso.resize(refFamily.size(), 1);
-	for (int i : refFamily) //count markernum
-	{
-		i = abs(i);
-		refMarkerMax = refMarkerMax > i ? refMarkerMax : i;
-		refMarkerNum[i]++;
-	}
-	for (int i = 0; i < refFamily.size(); i++) // find iso
-	{
-		int absFam = abs(refFamily[i]);
-		if ((refMarkerNum[absFam] <= 1)) //must be iso
-			continue;
-		for (int j = i + 2; j < refFamily.size(); j++)
-		{
-			if (refContig[i] != refContig[j])
-				break;
+	while (fin >> id >> family >> contig >> tmp) {
+		tarFamilyMax = max(tarFamilyMax, abs(family));
+		tarGenome.push_back(Marker(id, family, contig));
+	}	fin.close();
 
-			if (refFamily[j] == refFamily[i]) //same sign
-			{
-				if (j + 1 < refFamily.size() && refFamily[j + 1] == refFamily[i + 1])
-				{
-					if (refContig[j + 1] == refContig[i + 1] && refContig[i] == refContig[i + 1])
-					{
-						//cout<<i<<" "<<i+1<<" "<<j<<" "<<j+1<<endl;
-						refIso[i] = refIso[j] = refIso[i + 1] = refIso[j + 1] = 0;
-					}
+	// count family size
+	newFamily = max(refFamilyMax, tarFamilyMax);
+	refFamilySize.assign(newFamily+1, 0);
+	tarFamilySize.assign(newFamily+1, 0);
+	for (Marker& m: refGenome)
+		refFamilySize[m.absFamily]++;
+	for (Marker& m: tarGenome)
+		tarFamilySize[m.absFamily]++;
+
+	bool done = 0;
+	while (!done) {
+		done = 1;
+		for (int i = 0; i < refGenome.size(); i++)
+			for (int j = 0; j < tarGenome.size(); j++) {
+				// ref[i] and tar[j] not both singlton and same family
+				if (refFamilySize[refGenome[i].absFamily] > 1 ||
+					tarFamilySize[tarGenome[j].absFamily] > 1 ||
+					refGenome[i].absFamily != tarGenome[j].absFamily)
+					continue;
+				// ref[i] and tar[j] same sign
+				if (refGenome[i].family == tarGenome[j].family) {
+					rename(i, j, i+1, j+1, 1, done);
+					rename(i, j, i-1, j-1, 1, done);
+				} else {
+					rename(i, j, i+1, j-1, -1, done);
+					rename(i, j, i-1, j+1, -1, done);
 				}
 			}
-			else if (refFamily[j] == -refFamily[i])
-			{
-				if (refFamily[j - 1] == -refFamily[i + 1])
-				{
-					if (refContig[j - 1] == refContig[i + 1] && refContig[i] == refContig[i + 1])
-					{
-						//cout<<i<<" "<<j<<" "<<i+1<<" "<<j-1<<endl;
-						refIso[i] = refIso[j] = refIso[i + 1] = refIso[j - 1] = 0;
-					}
-				}
-			}
-		}
+		if (!done)
+			printf("rename\n");
 	}
-	tarMarkerNum.resize(tarFamily.size() + 1);
-	tarIso.resize(tarFamily.size(), 1);
-	for (int i : tarFamily)
-	{
-		i = abs(i);
-		tarMarkerMax = tarMarkerMax > i ? tarMarkerMax : i;
-		tarMarkerNum[i]++;
-	}
-	for (int i = 0; i < tarFamily.size(); i++) // find iso
-	{
-		int absFam = abs(tarFamily[i]);
-		if ((tarMarkerNum[absFam] <= 1)) //must be iso
-			continue;
-		for (int j = i + 2; j < tarFamily.size(); j++)
-		{
-			if (tarContig[i] != tarContig[j])
-				break;
-
-			if (tarFamily[j] == tarFamily[i]) //same sign
-			{
-				if (j + 1 < tarFamily.size() && tarFamily[j + 1] == tarFamily[i + 1])
-				{
-					if (tarContig[j + 1] == tarContig[i + 1] && tarContig[i] == tarContig[i + 1])
-					{
-						//cout<<i<<" "<<i+1<<" "<<j<<" "<<j+1<<endl;
-						tarIso[i] = tarIso[j] = tarIso[i + 1] = tarIso[j + 1] = 0;
-					}
-				}
-			}
-			else if (tarFamily[j] == -tarFamily[i])
-			{
-				if (tarFamily[j - 1] == -tarFamily[i + 1])
-				{
-					if (tarContig[j - 1] == tarContig[i + 1] && tarContig[i] == tarContig[i + 1])
-					{
-						//cout<<i<<" "<<j<<" "<<i+1<<" "<<j-1<<endl;
-						tarIso[i] = tarIso[j] = tarIso[i + 1] = tarIso[j - 1] = 0;
-					}
-				}
-			}
-		}
-	}
-	showSingletonPercentage();
-
-	bool isend = 0;
-	while (!isend)
-	{
-		cout << "+" << endl;
-		isend = 1;
-		for (int i = 0; i < refFamily.size() - 1; i++)
-		{
-			int refAbsFam = abs(refFamily[i]);
-			if (refMarkerNum[refAbsFam] == 1) //singleton on ref
-			{
-				if (refContig[i] == refContig[i + 1]) //iso on ref singlton's right
-				{
-					for (int j = 0; j < tarFamily.size() - 1; j++)
-					{
-						if (tarFamily[j] == refFamily[i] && tarMarkerNum[abs(tarFamily[j])] == 1) //shared + singleton on tar
-						{
-							//cout<<"ref"<<i<<" tar"<<j<<endl;
-							if (tarFamily[j + 1] == refFamily[i + 1] && tarContig[j] == tarContig[j + 1]) //shared + iso on tar
-							{
-								if (refMarkerNum[abs(refFamily[i + 1])] > 1 || tarMarkerNum[abs(tarFamily[j + 1])] > 1) //not all singleton
-								{
-									isend = 0;
-									//cout<<"ref:"<<i<<" "<<i+1<<" tar:"<<j<<" "<<j+1<<endl;
-									refMarkerNum[abs(refFamily[i + 1])]--;
-									tarMarkerNum[abs(tarFamily[j + 1])]--;
-
-									refFamily[i + 1] = ++refMarkerMax;
-									if (refMarkerNum.size() == refMarkerMax) //warning: Fool Proof
-										refMarkerNum.pb(1);
-									else
-										refMarkerNum[refMarkerMax] = 1;
-
-									tarFamily[j + 1] = ++tarMarkerMax;
-									if (tarMarkerNum.size() == tarMarkerMax) //warning: Fool Proof
-										tarMarkerNum.pb(1);
-									else
-										tarMarkerNum[tarMarkerMax] = 1;
-								}
-							}
-						}
-						//neg
-						else if (tarFamily[j] == -refFamily[i] && tarMarkerNum[abs(tarFamily[j])] == 1) //singleton on tar
-						{
-							if (j - 1 >= 0 && tarFamily[j - 1] == -refFamily[i + 1] && tarContig[j] == tarContig[j - 1]) //shared + iso on tar
-							{
-								if (refMarkerNum[abs(refFamily[i + 1])] > 1 || tarMarkerNum[abs(tarFamily[j - 1])] > 1)
-								{
-									isend = 0;
-									//cout<<"ref:"<<i<<" "<<i+1<<" tar:"<<j<<" "<<j-1<<endl;
-									refMarkerNum[abs(refFamily[i + 1])]--;
-									tarMarkerNum[abs(tarFamily[j - 1])]--;
-
-									refFamily[i + 1] = ++refMarkerMax;
-									if (refMarkerNum.size() == refMarkerMax) //warning: Fool Proof
-										refMarkerNum.pb(1);
-									else
-										refMarkerNum[refMarkerMax] = 1;
-									tarFamily[j - 1] = -(++tarMarkerMax);
-									if (tarMarkerNum.size() == tarMarkerMax) //warning: Fool Proof
-										tarMarkerNum.pb(1);
-									else
-										tarMarkerNum[tarMarkerMax] = 1;
-								}
-							}
-						}
-					}
-				}
-				if (i - 1 >= 0 && refContig[i] == refContig[i - 1]) //iso on ref singleton's left
-				{
-					for (int j = 0; j < tarFamily.size() - 1; j++)
-					{
-						if (tarFamily[j] == refFamily[i] && tarMarkerNum[abs(tarFamily[j])] == 1) //shared + singleton on tar
-						{
-							//cout<<"p2ref"<<i<<" tar"<<j<<endl;
-							//cout<<tarIso[j-1]<<endl;
-							if (j - 1 >= 0 && tarFamily[j - 1] == refFamily[i - 1] && tarContig[j] == tarContig[j - 1]) //shared + iso on tar
-							{
-								//cout<<"p2+ref"<<i<<" tar"<<j<<endl;
-								if (refMarkerNum[abs(refFamily[i - 1])] > 1 || tarMarkerNum[abs(tarFamily[j - 1])] > 1) //not all singleton
-								{
-									//cout<<"p2++ref"<<i<<" tar"<<j<<endl;
-									isend = 0;
-									//cout<<"ref:"<<i<<" "<<i+1<<" tar:"<<j<<" "<<j+1<<endl;
-									refMarkerNum[abs(refFamily[i - 1])]--;
-									tarMarkerNum[abs(tarFamily[j - 1])]--;
-
-									refFamily[i - 1] = ++refMarkerMax;
-									if (refMarkerNum.size() == refMarkerMax) //warning: Fool Proof
-										refMarkerNum.pb(1);
-									else
-										refMarkerNum[refMarkerMax] = 1;
-
-									tarFamily[j - 1] = ++tarMarkerMax;
-									if (tarMarkerNum.size() == tarMarkerMax) //warning: Fool Proof
-										tarMarkerNum.pb(1);
-									else
-										tarMarkerNum[tarMarkerMax] = 1;
-								}
-							}
-						}
-						//neg
-						else if (tarFamily[j] == -refFamily[i] && tarMarkerNum[abs(tarFamily[j])] == 1) //singleton on tar
-						{
-							if (j + 1 < tarFamily.size() && tarFamily[j + 1] == -refFamily[i - 1] && tarContig[j + 1] == tarContig[j]) //shared + iso on tar
-							{
-								if (refMarkerNum[abs(refFamily[i - 1])] > 1 || tarMarkerNum[abs(tarFamily[j + 1])] > 1)
-								{
-									isend = 0;
-									//cout<<"ref:"<<i<<" "<<i+1<<" tar:"<<j<<" "<<j-1<<endl;
-									refMarkerNum[abs(refFamily[i - 1])]--;
-									tarMarkerNum[abs(tarFamily[j + 1])]--;
-
-									refFamily[i - 1] = ++refMarkerMax;
-									if (refMarkerNum.size() == refMarkerMax)
-										refMarkerNum.pb(1);
-									else
-										refMarkerNum[refMarkerMax] = 1;
-
-									tarFamily[j + 1] = -(++tarMarkerMax);
-									if (tarMarkerNum.size() == tarMarkerMax) //warning: Fool Proof
-										tarMarkerNum.pb(1);
-									else
-										tarMarkerNum[tarMarkerMax] = 1;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
 	string out_dir(argc < 4 ? "output" : argv[3]);
-	ofstream fout(out_dir+"/ref_spd1.all");
-	int tmpid = 1;
-	for (int i = 0; i < refFamily.size(); i++)
-	{
-		if (tarMarkerNum[abs(refFamily[i])] != 0)
-			fout << tmpid++ << " " << refFamily[i] << " " << refContig[i] << " " << 1 << endl;
-	}
-	fout.close();
+	std::ofstream fout(out_dir+"/ref_spd1.all");
 
+	int uid = 1;
+	for (int i = 0; i < refGenome.size(); i++) {
+		if (tarFamilySize[refGenome[i].absFamily] != 0)
+			fout << uid++ << " " << refGenome[i].family << " " << refGenome[i].contig << " " << 1 << "\n";
+	}	fout.close();
+	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
-	tmpid = 1;
-	for (int i = 0; i < tarFamily.size(); i++)
-	{
-		if (refMarkerNum[abs(tarFamily[i])] != 0)
-			fout << tmpid++ << " " << tarFamily[i] << " " << tarContig[i] << " " << 1 << endl;
-	}
-	showSingletonPercentage();
+	for (int i = 0; i < tarGenome.size(); i++) {
+		if (refFamilySize[tarGenome[i].absFamily] != 0)
+			fout << uid++ << " " << tarGenome[i].family << " " << tarGenome[i].contig << " " << 1 << "\n";
+	}	fout.close();
 
 	markerReorder(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all");
 	return 0;

@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-using namespace std;
+using std::vector;
+using std::string;
 
 #define max(a, b) (a > b ? a : b)
 #define abs(a) (a > 0 ? a : -a)
@@ -50,7 +51,7 @@ int main(int argc, char *argv[])
 	}
 	string contig;
 	int id, family, tmp;
-	ifstream fin(argv[1]);
+	std::ifstream fin(argv[1]);
 	while (fin >> id >> family >> contig >> tmp) {
 		refFamilyMax = max(refFamilyMax, abs(family));
 		refGenome.push_back(Marker(id, family, contig));
@@ -88,7 +89,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	string out_dir(argc < 4 ? "output" : argv[3]);
-	ofstream fout(out_dir+"/ref_spd1.all");
+	std::ofstream fout(out_dir+"/ref_spd1.all");
 
 	int uid = 1;
 	for (int i = 0; i < refGenome.size(); i++) {
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
 			printf("del %d: %d\n", i+1, refGenome[i].absFamily);
 			continue;
 		}
-		fout << uid++ << " " << refGenome[i].family << " " << refGenome[i].contig << " " << 1 << endl;
+		fout << uid++ << " " << refGenome[i].family << " " << refGenome[i].contig << " " << 1 << "\n";
 	}	fout.close();
 	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
 			printf("del %d: %d\n", i+1, tarGenome[i].absFamily);
 			continue;
 		}
-		fout << uid++ << " " << tarGenome[i].family << " " << tarGenome[i].contig << " " << 1 << endl;
+		fout << uid++ << " " << tarGenome[i].family << " " << tarGenome[i].contig << " " << 1 << "\n";
 	}	fout.close();
 	return 0;
 }
