@@ -14,20 +14,26 @@ struct Marker
 {
 	int id, family, absFamily;
 	string contig;
-	Marker(int id_, int family_, string contig_) {
-		id = id_;
-		family = family_;
-		absFamily = abs(family_);
-		contig = contig_;
+
+	Marker(void):
+		id{0}, family{0}, absFamily{0}, contig{""} {}
+	Marker(int id, int family, string contig):
+		id{id}, family{family}, absFamily{abs(family)}, contig{contig} {}
+	void setMarker(int newId, int newFamily, string newContig) {
+		this->id = newId;
+		this->family = newFamily;
+		this->contig = newContig;
+		this->absFamily = abs(newFamily);
 	}
 	void setFamily(int newFamily) {
-		family = newFamily;
-		absFamily = abs(newFamily);
+		this->family = newFamily;
+		this->absFamily = abs(newFamily);
 	}
 	void show() {
-		print("Marker({}, {}, {})\n", id, family, contig);
+		print("Marker({}, {}, {})\n", this->id, this->family, this->contig);
 	}
 };
+bool done = false;
 int maxFamily = 0;
 vector<Marker> ref, tar;
 vector<int> refKeep, tarKeep;
@@ -44,8 +50,10 @@ void setKeep(int i, int j, int idx, int jdx, int reversed)
 		ref[i].contig == ref[idx].contig &&
 		tar[j].contig == tar[jdx].contig &&
 		// same family & (not) same sign
-		ref[idx].family == reversed*tar[jdx].family) {
+		ref[idx].family == reversed*tar[jdx].family &&
+		(refKeep[ref[idx].absFamily] != idx || tarKeep[tar[jdx].absFamily] != jdx)) {
 
+		done = false;
 		refKeep[ref[idx].absFamily] = idx;
 		tarKeep[tar[jdx].absFamily] = jdx;
 	}
@@ -77,45 +85,65 @@ int main(int argc, char *argv[])
 	for (Marker& m: tar)
 		tarFamilySize[m.absFamily]++;
 
+	// speedup_1 for exemplar
 	refKeep.assign(maxFamily+1, -1);
 	tarKeep.assign(maxFamily+1, -1);
-	for (int i = 0; i < ref.size(); i++)
-		for (int j = 0; j < tar.size(); j++) {
-			// ref[i] and tar[j] not both singlton and same family
-			if (refFamilySize[ref[i].absFamily] > 1 ||
-				tarFamilySize[tar[j].absFamily] > 1 ||
-				ref[i].absFamily != tar[j].absFamily)
-				continue;
-			// ref[i] and tar[j] same sign
-			if (ref[i].family == tar[j].family) {
-				setKeep(i, j, i+1, j+1, 1);
-				setKeep(i, j, i-1, j-1, 1);
-			} else {
-				setKeep(i, j, i+1, j-1, -1);
-				setKeep(i, j, i-1, j+1, -1);
+	while (!done) {
+		done = true;
+		for (int i = 0; i < ref.size(); i++)
+			for (int j = 0; j < tar.size(); j++) {
+				// ref[i] and tar[j] not both singlton and same family
+				if (refFamilySize[ref[i].absFamily] > 1 ||
+					tarFamilySize[tar[j].absFamily] > 1 ||
+					ref[i].absFamily != tar[j].absFamily)
+					continue;
+				// ref[i] and tar[j] same sign
+				if (ref[i].family == tar[j].family) {
+					setKeep(i, j, i+1, j+1, 1);
+					setKeep(i, j, i-1, j-1, 1);
+				} else {
+					setKeep(i, j, i+1, j-1, -1);
+					setKeep(i, j, i-1, j+1, -1);
+				}
 			}
-		}
+		// update genome vectors
+		int idx = 0;
+		for (int i = 0; i < ref.size(); i++) {
+			int kidx = refKeep[ref[i].absFamily];
+			if (kidx > 0 && kidx != i || tarFamilySize[ref[i].absFamily] == 0) {
+				print("del {}: {}\n", i+1, ref[i].absFamily);
+				refFamilySize[ref[i].absFamily]--;
+				continue;
+			}
+			if (kidx == i)
+				refKeep[ref[i].absFamily] = idx;
+			ref[idx++].setMarker(idx, ref[i].family, ref[i].contig);
+		}	ref.resize(idx);
+		idx = 0;
+		for (int i = 0; i < tar.size(); i++) {
+			int kidx = tarKeep[tar[i].absFamily];
+			if (kidx > 0 && kidx != i || refFamilySize[tar[i].absFamily] == 0) {
+				print("del {}: {}\n", i+1, tar[i].absFamily);
+				tarFamilySize[tar[i].absFamily]--;
+				continue;
+			}
+			if (kidx == i)
+				tarKeep[tar[i].absFamily] = idx;
+			tar[idx++].setMarker(idx, tar[i].family, tar[i].contig);
+		}	tar.resize(idx);
+		if (!done)
+			print("loop\n");
+	}
+
+	// file output
 	string out_dir(argc < 4 ? "output" : argv[3]);
 	std::ofstream fout(out_dir+"/ref_spd1.all");
-
-	int uid = 1;
-	for (int i = 0; i < ref.size(); i++) {
-		int kidx = refKeep[ref[i].absFamily];
-		if (kidx > 0 && kidx != i) {
-			print("del {}: {}\n", i+1, ref[i].absFamily);
-			continue;
-		}
-		fout << format("{} {} {} 1\n", uid++, ref[i].family, ref[i].contig);
+	for (Marker& m: ref) {
+		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
 	}	fout.close();
-	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
-	for (int i = 0; i < tar.size(); i++) {
-		int kidx = tarKeep[tar[i].absFamily];
-		if (kidx > 0 && kidx != i) {
-			print("del {}: {}\n", i+1, tar[i].absFamily);
-			continue;
-		}
-		fout << format("{} {} {} 1\n", uid++, tar[i].family, tar[i].contig);
+	for (Marker& m: tar) {
+		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
 	}	fout.close();
 	return 0;
 }
