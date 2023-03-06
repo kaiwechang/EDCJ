@@ -1,6 +1,9 @@
-#include <iostream>
+#include <fmt/core.h>
 #include <fstream>
 #include <vector>
+
+using fmt::print;
+using fmt::format;
 using std::vector;
 using std::string;
 
@@ -17,8 +20,12 @@ struct Marker
 		absFamily = abs(family_);
 		contig = contig_;
 	}
+	void setFamily(int newFamily) {
+		family = newFamily;
+		absFamily = abs(newFamily);
+	}
 	void show() {
-		printf("Marker(%d, %d, %s)\n", id, family, contig.c_str());
+		print("Marker({}, {}, {})\n", id, family, contig);
 	}
 };
 vector<Marker> refGenome, tarGenome;
@@ -46,7 +53,7 @@ void setKeep(int i, int j, int idx, int jdx, int reversed)
 int main(int argc, char *argv[])
 {
 	if (argc < 4) {
-		printf("[error] no ref/tar genome.\n");
+		print("[error] no ref/tar genome.\n");
 		return 0;
 	}
 	string contig;
@@ -95,20 +102,20 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < refGenome.size(); i++) {
 		int kidx = refKeep[refGenome[i].absFamily];
 		if (kidx > 0 && kidx != i) {
-			printf("del %d: %d\n", i+1, refGenome[i].absFamily);
+			print("del {}: {}\n", i+1, refGenome[i].absFamily);
 			continue;
 		}
-		fout << uid++ << " " << refGenome[i].family << " " << refGenome[i].contig << " " << 1 << "\n";
+		fout << format("{} {} {} 1\n", uid++, refGenome[i].family, refGenome[i].contig);
 	}	fout.close();
 	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
 	for (int i = 0; i < tarGenome.size(); i++) {
 		int kidx = tarKeep[tarGenome[i].absFamily];
 		if (kidx > 0 && kidx != i) {
-			printf("del %d: %d\n", i+1, tarGenome[i].absFamily);
+			print("del {}: {}\n", i+1, tarGenome[i].absFamily);
 			continue;
 		}
-		fout << uid++ << " " << tarGenome[i].family << " " << tarGenome[i].contig << " " << 1 << "\n";
+		fout << format("{} {} {} 1\n", uid++, tarGenome[i].family, tarGenome[i].contig);
 	}	fout.close();
 	return 0;
 }

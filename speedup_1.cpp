@@ -1,7 +1,11 @@
 #include "markerReorder.cpp"
-#include <iostream>
+
+#include <fmt/core.h>
 #include <fstream>
 #include <vector>
+
+using fmt::print;
+using fmt::format;
 using std::vector;
 using std::string;
 
@@ -45,15 +49,15 @@ void rename(int i, int j, int idx, int jdx, int reversed, bool& done)
 			tarFamilySize.resize(newFamily+1, 0);
 		tarFamilySize[newFamily] = 1;
 
-		/*printf("newFamily: %d\n", newFamily);
-		printf("ref[%d]: %d\n", idx, refGenome[idx].family);
-		printf("tar[%d]: %d\n", idx, tarGenome[jdx].family);*/
+		/*print("newFamily: {}\n", newFamily);
+		print("ref[{}]: {}\n", idx, refGenome[idx].family);
+		print("tar[{}]: {}\n", idx, tarGenome[jdx].family);*/
 	} 
 }
 int main(int argc, char *argv[])
 {
 	if (argc < 4) {
-		printf("[error] no ref/tar genome.\n");
+		print("[error] no ref/tar genome.\n");
 		return 0;
 	}
 	string contig;
@@ -98,7 +102,7 @@ int main(int argc, char *argv[])
 				}
 			}
 		if (!done)
-			printf("rename\n");
+			print("rename\n");
 	}
 	string out_dir(argc < 4 ? "output" : argv[3]);
 	std::ofstream fout(out_dir+"/ref_spd1.all");
@@ -106,13 +110,13 @@ int main(int argc, char *argv[])
 	int uid = 1;
 	for (int i = 0; i < refGenome.size(); i++) {
 		if (tarFamilySize[refGenome[i].absFamily] != 0)
-			fout << uid++ << " " << refGenome[i].family << " " << refGenome[i].contig << " " << 1 << "\n";
+			fout << format("{} {} {} 1\n", uid++, refGenome[i].family, refGenome[i].contig);
 	}	fout.close();
 	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
 	for (int i = 0; i < tarGenome.size(); i++) {
 		if (refFamilySize[tarGenome[i].absFamily] != 0)
-			fout << uid++ << " " << tarGenome[i].family << " " << tarGenome[i].contig << " " << 1 << "\n";
+			fout << format("{} {} {} 1\n", uid++, tarGenome[i].family, tarGenome[i].contig);
 	}	fout.close();
 
 	markerReorder(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all");

@@ -1,7 +1,7 @@
 CC = gcc
 CXX = g++
 CFLAGS = -O3 -lm
-CXXFLAGS = $(CFLAGS) -std=c++11
+CXXFLAGS = $(CFLAGS) -std=c++11 -lfmt
 
 SERVER_ONLY = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/lib -lgurobi95
 LOCAL_ONLY = -lgurobi100
