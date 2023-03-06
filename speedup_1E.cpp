@@ -28,26 +28,26 @@ struct Marker
 		print("Marker({}, {}, {})\n", id, family, contig);
 	}
 };
-vector<Marker> refGenome, tarGenome;
+int maxFamily = 0;
+vector<Marker> ref, tar;
 vector<int> refKeep, tarKeep;
 vector<int> refFamilySize, tarFamilySize;
-int refFamilyMax = 0, tarFamilyMax = 0;
 
 void setKeep(int i, int j, int idx, int jdx, int reversed)
 {
 	if (// check index in range
-		i   > 0 && i   < refGenome.size() &&
-		idx > 0 && idx < refGenome.size() &&
-		j   > 0 && j   < tarGenome.size() &&
-		jdx > 0 && jdx < tarGenome.size() &&
+		i   > 0 && i   < ref.size() &&
+		idx > 0 && idx < ref.size() &&
+		j   > 0 && j   < tar.size() &&
+		jdx > 0 && jdx < tar.size() &&
 		// same contig
-		refGenome[i].contig == refGenome[idx].contig &&
-		tarGenome[j].contig == tarGenome[jdx].contig &&
+		ref[i].contig == ref[idx].contig &&
+		tar[j].contig == tar[jdx].contig &&
 		// same family & (not) same sign
-		refGenome[idx].family == reversed*tarGenome[jdx].family) {
+		ref[idx].family == reversed*tar[jdx].family) {
 
-		refKeep[refGenome[idx].absFamily] = idx;
-		tarKeep[tarGenome[jdx].absFamily] = jdx;
+		refKeep[ref[idx].absFamily] = idx;
+		tarKeep[tar[jdx].absFamily] = jdx;
 	}
 }
 int main(int argc, char *argv[])
@@ -60,34 +60,34 @@ int main(int argc, char *argv[])
 	int id, family, tmp;
 	std::ifstream fin(argv[1]);
 	while (fin >> id >> family >> contig >> tmp) {
-		refFamilyMax = max(refFamilyMax, abs(family));
-		refGenome.push_back(Marker(id, family, contig));
+		maxFamily = max(maxFamily, abs(family));
+		ref.push_back(Marker(id, family, contig));
 	}	fin.close();
 	fin.open(argv[2]);
 	while (fin >> id >> family >> contig >> tmp) {
-		tarFamilyMax = max(tarFamilyMax, abs(family));
-		tarGenome.push_back(Marker(id, family, contig));
+		maxFamily = max(maxFamily, abs(family));
+		tar.push_back(Marker(id, family, contig));
 	}	fin.close();
 
 	// count family size
-	refFamilySize.assign(refFamilyMax+1, 0);
-	tarFamilySize.assign(tarFamilyMax+1, 0);
-	for (Marker& m: refGenome)
+	refFamilySize.assign(maxFamily+1, 0);
+	tarFamilySize.assign(maxFamily+1, 0);
+	for (Marker& m: ref)
 		refFamilySize[m.absFamily]++;
-	for (Marker& m: tarGenome)
+	for (Marker& m: tar)
 		tarFamilySize[m.absFamily]++;
 
-	refKeep.assign(refFamilyMax+1, -1);
-	tarKeep.assign(tarFamilyMax+1, -1);
-	for (int i = 0; i < refGenome.size(); i++)
-		for (int j = 0; j < tarGenome.size(); j++) {
+	refKeep.assign(maxFamily+1, -1);
+	tarKeep.assign(maxFamily+1, -1);
+	for (int i = 0; i < ref.size(); i++)
+		for (int j = 0; j < tar.size(); j++) {
 			// ref[i] and tar[j] not both singlton and same family
-			if (refFamilySize[refGenome[i].absFamily] > 1 ||
-				tarFamilySize[tarGenome[j].absFamily] > 1 ||
-				refGenome[i].absFamily != tarGenome[j].absFamily)
+			if (refFamilySize[ref[i].absFamily] > 1 ||
+				tarFamilySize[tar[j].absFamily] > 1 ||
+				ref[i].absFamily != tar[j].absFamily)
 				continue;
 			// ref[i] and tar[j] same sign
-			if (refGenome[i].family == tarGenome[j].family) {
+			if (ref[i].family == tar[j].family) {
 				setKeep(i, j, i+1, j+1, 1);
 				setKeep(i, j, i-1, j-1, 1);
 			} else {
@@ -99,23 +99,23 @@ int main(int argc, char *argv[])
 	std::ofstream fout(out_dir+"/ref_spd1.all");
 
 	int uid = 1;
-	for (int i = 0; i < refGenome.size(); i++) {
-		int kidx = refKeep[refGenome[i].absFamily];
+	for (int i = 0; i < ref.size(); i++) {
+		int kidx = refKeep[ref[i].absFamily];
 		if (kidx > 0 && kidx != i) {
-			print("del {}: {}\n", i+1, refGenome[i].absFamily);
+			print("del {}: {}\n", i+1, ref[i].absFamily);
 			continue;
 		}
-		fout << format("{} {} {} 1\n", uid++, refGenome[i].family, refGenome[i].contig);
+		fout << format("{} {} {} 1\n", uid++, ref[i].family, ref[i].contig);
 	}	fout.close();
 	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
-	for (int i = 0; i < tarGenome.size(); i++) {
-		int kidx = tarKeep[tarGenome[i].absFamily];
+	for (int i = 0; i < tar.size(); i++) {
+		int kidx = tarKeep[tar[i].absFamily];
 		if (kidx > 0 && kidx != i) {
-			print("del {}: {}\n", i+1, tarGenome[i].absFamily);
+			print("del {}: {}\n", i+1, tar[i].absFamily);
 			continue;
 		}
-		fout << format("{} {} {} 1\n", uid++, tarGenome[i].family, tarGenome[i].contig);
+		fout << format("{} {} {} 1\n", uid++, tar[i].family, tar[i].contig);
 	}	fout.close();
 	return 0;
 }

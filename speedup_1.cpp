@@ -1,57 +1,76 @@
-#include "markerReorder.cpp"
-
 #include <fmt/core.h>
 #include <fstream>
 #include <vector>
+#include <set>
 
 using fmt::print;
 using fmt::format;
+
+using std::set;
 using std::vector;
 using std::string;
 
 #define max(a, b) (a > b ? a : b)
+#define abs(a) (a > 0 ? a : -a)
 
-vector<Marker> refGenome, tarGenome;
+struct Marker
+{
+	int id, family, absFamily;
+	string contig;
+	Marker(int id_, int family_, string contig_) {
+		id = id_;
+		family = family_;
+		contig = contig_;
+		absFamily = abs(family_);
+	}
+	void setFamily(int newFamily) {
+		family = newFamily;
+		absFamily = abs(newFamily);
+	}
+	void show() {
+		print("Marker({}, {}, {})\n", id, family, contig);
+	}
+};
+bool done = false;
+int maxFamily = 0;
+vector<Marker> ref, tar;
 vector<int> refFamilySize, tarFamilySize;
-int refFamilyMax = 0, tarFamilyMax = 0, newFamily;
 
-void rename(int i, int j, int idx, int jdx, int reversed, bool& done)
+void rename(int i, int j, int idx, int jdx, int reversed)
 {
 	if (// check index in range
-		i   > 0 && i   < refGenome.size() &&
-		idx > 0 && idx < refGenome.size() &&
-		j   > 0 && j   < tarGenome.size() &&
-		jdx > 0 && jdx < tarGenome.size() &&
+		i   > 0 && i   < ref.size() &&
+		idx > 0 && idx < ref.size() &&
+		j   > 0 && j   < tar.size() &&
+		jdx > 0 && jdx < tar.size() &&
 		// same contig
-		refGenome[i].contig == refGenome[idx].contig &&
-		tarGenome[j].contig == tarGenome[jdx].contig &&
+		ref[i].contig == ref[idx].contig &&
+		tar[j].contig == tar[jdx].contig &&
 		// same family & (not) same sign
-		refGenome[idx].family == reversed*tarGenome[jdx].family &&
+		ref[idx].family == reversed*tar[jdx].family &&
 		// at least one non-singleton
-		(refFamilySize[refGenome[idx].absFamily] > 1 || tarFamilySize[tarGenome[jdx].absFamily] > 1)) {
+		(refFamilySize[ref[idx].absFamily] > 1 || tarFamilySize[tar[jdx].absFamily] > 1)) {
 
-		done = 0;
+		done = false;
 		// remove original
-		refFamilySize[refGenome[idx].absFamily]--;
-		tarFamilySize[tarGenome[jdx].absFamily]--;
-		newFamily++;
+		refFamilySize[ref[idx].absFamily]--;
+		tarFamilySize[tar[jdx].absFamily]--;
+		maxFamily++;
 
-		refGenome[idx].setFamily(newFamily);
-		tarGenome[jdx].setFamily(
-			refGenome[i].family == -tarGenome[j].family ?
-			-newFamily : newFamily);
+		ref[idx].setFamily(maxFamily);
+		tar[jdx].setFamily(reversed*maxFamily);
 
-		if (refFamilySize.size() < newFamily+1)
-			refFamilySize.resize(newFamily+1, 0);
-		refFamilySize[newFamily] = 1;
+		if (refFamilySize.size() < maxFamily+1)
+			refFamilySize.resize(maxFamily+1, 0);
+		refFamilySize[maxFamily] = 1;
 
-		if (tarFamilySize.size() < newFamily+1)
-			tarFamilySize.resize(newFamily+1, 0);
-		tarFamilySize[newFamily] = 1;
+		if (tarFamilySize.size() < maxFamily+1)
+			tarFamilySize.resize(maxFamily+1, 0);
+		tarFamilySize[maxFamily] = 1;
 
-		/*print("newFamily: {}\n", newFamily);
-		print("ref[{}]: {}\n", idx, refGenome[idx].family);
-		print("tar[{}]: {}\n", idx, tarGenome[jdx].family);*/
+		/*print("maxFamily: {}\n", maxFamily);
+		print("ref[{}]: {}, \n", idx, ref[idx].family);
+		print("tar[{}]: {}\n", jdx, tar[jdx].family);*/
 	} 
 }
 int main(int argc, char *argv[])
@@ -64,61 +83,73 @@ int main(int argc, char *argv[])
 	int id, family, tmp;
 	std::ifstream fin(argv[1]);
 	while (fin >> id >> family >> contig >> tmp) {
-		refFamilyMax = max(refFamilyMax, abs(family));
-		refGenome.push_back(Marker(id, family, contig));
+		maxFamily = max(maxFamily, abs(family));
+		ref.push_back(Marker(id, family, contig));
 	}	fin.close();
 	fin.open(argv[2]);
 	while (fin >> id >> family >> contig >> tmp) {
-		tarFamilyMax = max(tarFamilyMax, abs(family));
-		tarGenome.push_back(Marker(id, family, contig));
+		maxFamily = max(maxFamily, abs(family));
+		tar.push_back(Marker(id, family, contig));
 	}	fin.close();
 
 	// count family size
-	newFamily = max(refFamilyMax, tarFamilyMax);
-	refFamilySize.assign(newFamily+1, 0);
-	tarFamilySize.assign(newFamily+1, 0);
-	for (Marker& m: refGenome)
+	refFamilySize.assign(maxFamily+1, 0);
+	tarFamilySize.assign(maxFamily+1, 0);
+	for (Marker& m: ref)
 		refFamilySize[m.absFamily]++;
-	for (Marker& m: tarGenome)
+	for (Marker& m: tar)
 		tarFamilySize[m.absFamily]++;
 
-	bool done = 0;
+	// speedup 1
 	while (!done) {
-		done = 1;
-		for (int i = 0; i < refGenome.size(); i++)
-			for (int j = 0; j < tarGenome.size(); j++) {
+		done = true;
+		for (int i = 0; i < ref.size(); i++)
+			for (int j = 0; j < tar.size(); j++) {
 				// ref[i] and tar[j] not both singlton and same family
-				if (refFamilySize[refGenome[i].absFamily] > 1 ||
-					tarFamilySize[tarGenome[j].absFamily] > 1 ||
-					refGenome[i].absFamily != tarGenome[j].absFamily)
+				if (refFamilySize[ref[i].absFamily] > 1 ||
+					tarFamilySize[tar[j].absFamily] > 1 ||
+					ref[i].absFamily != tar[j].absFamily)
 					continue;
 				// ref[i] and tar[j] same sign
-				if (refGenome[i].family == tarGenome[j].family) {
-					rename(i, j, i+1, j+1, 1, done);
-					rename(i, j, i-1, j-1, 1, done);
+				if (ref[i].family == tar[j].family) {
+					rename(i, j, i+1, j+1, 1);
+					rename(i, j, i-1, j-1, 1);
 				} else {
-					rename(i, j, i+1, j-1, -1, done);
-					rename(i, j, i-1, j+1, -1, done);
+					rename(i, j, i+1, j-1, -1);
+					rename(i, j, i-1, j+1, -1);
 				}
 			}
 		if (!done)
-			print("rename\n");
+			print("loop\n");
 	}
+
+	// marker reorder
+	print("maxFamily: {}\n", maxFamily);
+	set<int> refFamily, tarFamily;
+	vector<int> reorder(maxFamily+1, 0);
+	for (Marker& m: ref)
+		if (tarFamilySize[m.absFamily] != 0)
+			refFamily.insert(m.absFamily);
+	int uid = 1;
+	for (auto f: refFamily)
+		reorder[f] = uid++;
+
+	// file output
 	string out_dir(argc < 4 ? "output" : argv[3]);
 	std::ofstream fout(out_dir+"/ref_spd1.all");
 
-	int uid = 1;
-	for (int i = 0; i < refGenome.size(); i++) {
-		if (tarFamilySize[refGenome[i].absFamily] != 0)
-			fout << format("{} {} {} 1\n", uid++, refGenome[i].family, refGenome[i].contig);
+	uid = 1;
+	for (Marker& m: ref) {
+		if (reorder[m.absFamily] != 0)
+			fout << format("{} {} {} 1\n", uid++,
+				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
 	}	fout.close();
 	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
-	for (int i = 0; i < tarGenome.size(); i++) {
-		if (refFamilySize[tarGenome[i].absFamily] != 0)
-			fout << format("{} {} {} 1\n", uid++, tarGenome[i].family, tarGenome[i].contig);
+	for (Marker& m: tar) {
+		if (reorder[m.absFamily] != 0)
+			fout << format("{} {} {} 1\n", uid++,
+				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
 	}	fout.close();
-
-	markerReorder(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all");
 	return 0;
 }

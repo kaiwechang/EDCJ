@@ -29,7 +29,6 @@ ilp_nocap: ilp_nocap.cpp
 
 run_cycle: mkdir
 	bin/speedup_1E			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
-#	bin/speedup_2			$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_2.log
 	bin/speedup_3			$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_3.log
 	bin/ilp_nocap			$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
 	bin/findContigTelomere	$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
