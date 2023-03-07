@@ -1,36 +1,9 @@
-#include <fmt/core.h>
+#include "utils.cpp"
 #include <fstream>
-#include <vector>
 #include <set>
 
-using fmt::print;
-using fmt::format;
-
 using std::set;
-using std::vector;
-using std::string;
 
-#define max(a, b) (a > b ? a : b)
-#define abs(a) (a > 0 ? a : -a)
-
-struct Marker
-{
-	int id, family, absFamily;
-	string contig;
-	Marker(int id_, int family_, string contig_) {
-		id = id_;
-		family = family_;
-		contig = contig_;
-		absFamily = abs(family_);
-	}
-	void setFamily(int newFamily) {
-		family = newFamily;
-		absFamily = abs(newFamily);
-	}
-	void show() {
-		print("Marker({}, {}, {})\n", id, family, contig);
-	}
-};
 bool done = false;
 int maxFamily = 0;
 vector<Marker> ref, tar;
