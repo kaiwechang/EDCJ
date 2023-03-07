@@ -92,6 +92,25 @@ int main(int argc, char *argv[])
 					rename(i, j, i-1, j+1, -1);
 				}
 			}
+		// update genome vectors
+		int idx = 0;
+		for (int i = 0; i < ref.size(); i++) {
+			if (tarFamilySize[ref[i].absFamily] == 0) {
+				print("del {}: {}\n", i+1, ref[i].absFamily);
+				refFamilySize[ref[i].absFamily]--;
+				continue;
+			}
+			ref[idx++].setMarker(idx, ref[i].family, ref[i].contig);
+		}	ref.resize(idx);
+		idx = 0;
+		for (int i = 0; i < tar.size(); i++) {
+			if (refFamilySize[tar[i].absFamily] == 0) {
+				print("del {}: {}\n", i+1, tar[i].absFamily);
+				tarFamilySize[tar[i].absFamily]--;
+				continue;
+			}
+			tar[idx++].setMarker(idx, tar[i].family, tar[i].contig);
+		}	tar.resize(idx);
 		if (!done)
 			print("loop\n");
 	}
@@ -101,8 +120,7 @@ int main(int argc, char *argv[])
 	set<int> refFamily, tarFamily;
 	vector<int> reorder(maxFamily+1, 0);
 	for (Marker& m: ref)
-		if (tarFamilySize[m.absFamily] != 0)
-			refFamily.insert(m.absFamily);
+		refFamily.insert(m.absFamily);
 	int uid = 1;
 	for (auto f: refFamily)
 		reorder[f] = uid++;
@@ -110,19 +128,12 @@ int main(int argc, char *argv[])
 	// file output
 	string out_dir(argc < 4 ? "output" : argv[3]);
 	std::ofstream fout(out_dir+"/ref_spd1.all");
-
-	uid = 1;
 	for (Marker& m: ref) {
-		if (reorder[m.absFamily] != 0)
-			fout << format("{} {} {} 1\n", uid++,
-				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
+		fout << format("{} {} {} 1\n", m.id, (m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
 	}	fout.close();
-	uid = 1;
 	fout.open(out_dir+"/tar_spd1.all");
 	for (Marker& m: tar) {
-		if (reorder[m.absFamily] != 0)
-			fout << format("{} {} {} 1\n", uid++,
-				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
+		fout << format("{} {} {} 1\n", m.id, (m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
 	}	fout.close();
 	return 0;
 }
