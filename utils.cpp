@@ -14,6 +14,12 @@ using std::vector;
 #define max(a, b) (a > b ? a : b)
 #define abs(a) (a > 0 ? a : -a)
 
+struct Telos
+{
+	int lhs, rhs;
+	Telos(void): lhs{0}, rhs{0} {}
+	Telos(int lhs, int rhs): lhs{lhs}, rhs{rhs} {}
+};
 struct Marker
 {
 	int id, family, absFamily;

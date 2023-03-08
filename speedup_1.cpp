@@ -49,7 +49,7 @@ void rename(int i, int j, int idx, int jdx, int reversed)
 int main(int argc, char *argv[])
 {
 	if (argc < 4) {
-		print("[error] no ref/tar genome.\n");
+		print("[error] Usage:\n>>> speedup_1 <ref genome> <tar genome> <output_dir>\n");
 		return 0;
 	}
 	string contig;

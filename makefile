@@ -6,12 +6,13 @@ CXXFLAGS = $(CFLAGS) -std=c++11 -lfmt
 SERVER_ONLY = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/lib -lgurobi95
 LOCAL_ONLY = -lgurobi100
 
-TARGETS = speedup_1 speedup_1E speedup_3 findContigTelomere ilp_nocap
+#TARGETS = speedup_1 speedup_1E speedup_3 findContigTelomere ilp_nocap
+TARGETS = speedup_1 speedup_1E postprocess
 BIN_DIR = bin
 OUT_DIR = output
 #TEST_DIR = ../testcase/EI_test
-#TEST_DIR = ../testcase/simData_smaller/sim1
-TEST_DIR = ../testcase/simdata1/sim_1000_80_5_100_1_30/1
+TEST_DIR = ../testcase/simData_smaller/sim1
+#TEST_DIR = ../testcase/simdata1/sim_1000_80_5_100_1_30/1
 
 .PHONY: all
 all: mkdir $(TARGETS)
@@ -31,8 +32,9 @@ run_cycle: mkdir
 	bin/speedup_1E			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
 	bin/speedup_3			$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_3.log
 	bin/ilp_nocap			$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	bin/findContigTelomere	$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
-	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
+	#bin/findContigTelomere	$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
+	bin/postprocess			$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/postprocess.log
+	#./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
 
 run_pure: mkdir
 	bin/ilp_nocap			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
@@ -42,8 +44,9 @@ run_pure: mkdir
 run_spd1: mkdir
 	bin/speedup_1			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
 	bin/ilp_nocap			$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	bin/findContigTelomere	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
-	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
+	#bin/findContigTelomere	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/findContigTelomere.log
+	bin/postprocess			$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/postprocess.log
+	#./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/myScaffold.txt				> $(OUT_DIR)/evaulate.txt
 
 run_spd1E: mkdir
 	bin/speedup_1E			$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
