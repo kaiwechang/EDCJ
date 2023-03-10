@@ -82,9 +82,9 @@ def write_file(tar_dir, item):
 
 def draw_plot(data, item):
 	plt.figure()
-	#plt.title(tar_dir)
+	plt.title(tar_dir)
 	plt.xticks(range(len(inv_list)), inv_list)
-	plt.xlabel("Inversion")
+	plt.xlabel("Inversion (%)")
 	item_label = {
 		"scaff": "# of Scaffolds", 
 		"time": "Time (sec)", 
@@ -93,13 +93,13 @@ def draw_plot(data, item):
 		"f_score": "F Score", 
 	}
 	plt.ylabel(item_label[item])
+	if item not in ["time", "scaff"]:
+		plt.ylim([0, 1])
 	plt.grid(True)
-	#plt.yscale("log")
 	for method in method_list:
 		plt.plot([sum([data[contig_list[0]][inv][sub][dup_list[0]][method][item] for sub in sub_list])/5 for inv in inv_list])
 	plt.legend(loc="best", labels=method_list)
 	plt.savefig("%s/%s.png"%(tar_dir, item))
-	#plt.show()
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
