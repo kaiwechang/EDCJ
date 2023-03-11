@@ -1,5 +1,4 @@
 #include "utils.cpp"
-#include <fstream>
 #include <set>
 
 using std::set;
@@ -8,6 +7,7 @@ bool done = false;
 int maxFamily = 0;
 vector<Marker> ref, tar;
 vector<int> refFamilySize, tarFamilySize;
+map<string, int> contigSize;
 
 void rename(int i, int j, int idx, int jdx, int reversed)
 {
@@ -51,18 +51,21 @@ int main(int argc, char *argv[])
 	if (argc < 4) {
 		print("[error] Usage:\n>>> speedup_1 <ref genome> <tar genome> <output_dir>\n");
 		return 0;
-	}
+	}	string out_dir(argv[3]);
+
+	// read ref/tar
 	string contig;
 	int id, family, tmp;
-	std::ifstream fin(argv[1]);
+	ifstream fin(argv[1]);
 	while (fin >> id >> family >> contig >> tmp) {
-		maxFamily = max(maxFamily, abs(family));
 		ref.push_back(Marker(id, family, contig));
+		maxFamily = max(maxFamily, abs(family));
 	}	fin.close();
 	fin.open(argv[2]);
 	while (fin >> id >> family >> contig >> tmp) {
-		maxFamily = max(maxFamily, abs(family));
 		tar.push_back(Marker(id, family, contig));
+		maxFamily = max(maxFamily, abs(family));
+		contigSize[contig]++;
 	}	fin.close();
 
 	// count family size
@@ -95,6 +98,17 @@ int main(int argc, char *argv[])
 		if (!done)
 			print("loop\n");
 	}
+	// output removed markers
+	ofstream fout(out_dir+"/removed_spd1.txt");
+	print("contigSize:\n");
+	for (Marker& m: tar)
+		if (refFamilySize[m.absFamily] == 0)
+			contigSize[m.contig]--;
+	for (auto& p: contigSize) {
+		if (p.second == 0)
+			fout << format("{}\n", p.first);
+		print("{}: {}\n", p.first, p.second);
+	}	fout.close();
 
 	// marker reorder
 	print("maxFamily: {}\n", maxFamily);
@@ -104,14 +118,12 @@ int main(int argc, char *argv[])
 		if (tarFamilySize[m.absFamily] != 0)
 			refFamily.insert(m.absFamily);
 	int uid = 1;
-	for (auto f: refFamily)
+	for (int f: refFamily)
 		reorder[f] = uid++;
 
-	// file output
-	string out_dir(argc < 4 ? "output" : argv[3]);
-	std::ofstream fout(out_dir+"/ref_spd1.all");
-
+	// output new ref/tar
 	uid = 1;
+	fout.open(out_dir+"/ref_spd1.all");
 	for (Marker& m: ref) {
 		if (reorder[m.absFamily] != 0)
 			fout << format("{} {} {} 1\n", uid++,

@@ -1,11 +1,11 @@
 #include "utils.cpp"
-#include <fstream>
 
 bool done = false;
 int maxFamily = 0;
 vector<Marker> ref, tar;
 vector<int> refKeep, tarKeep;
 vector<int> refFamilySize, tarFamilySize;
+map<string, int> contigSize;
 
 void setKeep(int i, int j, int idx, int jdx, int reversed)
 {
@@ -31,10 +31,12 @@ int main(int argc, char *argv[])
 	if (argc < 4) {
 		print("[error] Usage:\n>>> speedup_1E <ref genome> <tar genome> <output_dir>\n");
 		return 0;
-	}
+	}	string out_dir(argv[3]);
+
+	// read ref/tar
 	string contig;
 	int id, family, tmp;
-	std::ifstream fin(argv[1]);
+	ifstream fin(argv[1]);
 	while (fin >> id >> family >> contig >> tmp) {
 		maxFamily = max(maxFamily, abs(family));
 		ref.push_back(Marker(id, family, contig));
@@ -43,6 +45,7 @@ int main(int argc, char *argv[])
 	while (fin >> id >> family >> contig >> tmp) {
 		maxFamily = max(maxFamily, abs(family));
 		tar.push_back(Marker(id, family, contig));
+		contigSize[contig]++;
 	}	fin.close();
 
 	// count family size
@@ -93,19 +96,29 @@ int main(int argc, char *argv[])
 			if (kidx > 0 && kidx != i || refFamilySize[tar[i].absFamily] == 0) {
 				print("del {}: {}\n", i+1, tar[i].absFamily);
 				tarFamilySize[tar[i].absFamily]--;
+				contigSize[tar[i].contig]--;
 				continue;
 			}
 			if (kidx == i)
 				tarKeep[tar[i].absFamily] = idx;
 			tar[idx++].setMarker(idx, tar[i].family, tar[i].contig);
 		}	tar.resize(idx);
+
 		if (!done)
 			print("loop\n");
 	}
 
-	// file output
-	string out_dir(argc < 4 ? "output" : argv[3]);
-	std::ofstream fout(out_dir+"/ref_spd1.all");
+	// output removed markers
+	ofstream fout(out_dir+"/removed_spd1.txt");
+	print("contigSize:\n");
+	for (auto& p: contigSize) {
+		if (p.second == 0)
+			fout << format("{}\n", p.first);
+		print("{}: {}\n", p.first, p.second);
+	}	fout.close();
+
+	// output new ref/tar
+	fout.open(out_dir+"/ref_spd1.all");
 	for (Marker& m: ref) {
 		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
 	}	fout.close();

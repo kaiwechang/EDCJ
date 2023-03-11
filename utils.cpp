@@ -4,12 +4,19 @@
 // common data structures, macros, etc.
 
 #include <fmt/core.h>
+#include <fstream>
 #include <vector>
+#include <map>
 
 using fmt::print;
 using fmt::format;
+
+using std::ifstream;
+using std::ofstream;
+
 using std::string;
 using std::vector;
+using std::map;
 
 #define max(a, b) (a > b ? a : b)
 #define abs(a) (a > 0 ? a : -a)

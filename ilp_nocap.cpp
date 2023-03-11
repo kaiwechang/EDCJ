@@ -1017,7 +1017,7 @@ void showResult()
 		}
 	}
 	fout.close();
-	fout.open(out_dir+"/duplicated.txt");
+	fout.open(out_dir+"/removed_ilp.txt");
 	int refRemoveMarkerNums = 0;
 	for (int i = 0; i < tarMarkerSize; i++)
 	{

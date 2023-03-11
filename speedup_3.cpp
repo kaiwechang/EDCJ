@@ -1044,7 +1044,7 @@ int main(int argc, char *argv[])
 	}
 	fout.close();
 
-	fout.open(out_dir+"/tarContigMerge.all");
+	fout.open(out_dir+"/tar_merge.txt");
 	for(auto it : tarContigMerge)
 	{
 		fout << it.first << endl;
@@ -1056,7 +1056,7 @@ int main(int argc, char *argv[])
 	}
 	fout.close();
 
-	fout.open(out_dir+"/refContigMerge.all");
+	fout.open(out_dir+"/ref_merge.txt");
 	for(auto it : refContigMerge)
 	{
 		fout << it.first << endl;
