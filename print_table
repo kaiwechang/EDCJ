@@ -94,7 +94,7 @@ def draw_plot(data, item):
 	}
 	plt.ylabel(item_label[item])
 	if item not in ["time", "scaff"]:
-		plt.ylim([0, 1])
+		plt.ylim([0.7, 1])
 	plt.grid(True)
 	for method in method_list:
 		plt.plot([sum([data[contig_list[0]][inv][sub][dup_list[0]][method][item] for sub in sub_list])/5 for inv in inv_list])
