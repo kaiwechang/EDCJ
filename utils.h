@@ -1,5 +1,5 @@
-#ifndef DCJ_SCAFFOLDER_UTILS_CPP_
-#define DCJ_SCAFFOLDER_UTILS_CPP_
+#ifndef DCJ_SCAFFOLDER_UTILS_H_
+#define DCJ_SCAFFOLDER_UTILS_H_
 
 // common data structures, macros, etc.
 
@@ -51,4 +51,4 @@ struct Marker
 	}
 };
 
-#endif	// DCJ_SCAFFOLDER_UTILS_CPP_
+#endif	// DCJ_SCAFFOLDER_UTILS_H_
