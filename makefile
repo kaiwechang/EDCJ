@@ -1,7 +1,7 @@
 CC = gcc
 CXX = g++
 CFLAGS = -O3 -lm
-CXXFLAGS = $(CFLAGS) -std=c++11 -lfmt
+CXXFLAGS = $(CFLAGS) -std=c++20 -lfmt
 
 LOCAL_LIB = -lgurobi100
 SERVER_LIB = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/lib -lgurobi95
@@ -29,7 +29,7 @@ run_cycle: all
 	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
 	$(BIN_DIR)/speedup_3	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_3.log
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/postprocess.log
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 run_pure: all

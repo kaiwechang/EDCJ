@@ -21,6 +21,12 @@ using std::map;
 #define max(a, b) (a > b ? a : b)
 #define abs(a) (a > 0 ? a : -a)
 
+ofstream logFile;
+
+template<typename... Args>
+void logging(std::string_view fstr, Args... args) {
+	logFile << fmt::vformat(fstr, fmt::make_format_args(std::forward<Args>(args)...));
+}
 struct Telos
 {
 	int lhs, rhs;
@@ -47,7 +53,7 @@ struct Marker
 		this->absFamily = abs(newFamily);
 	}
 	void show() {
-		print("Marker({}, {}, {})\n", this->id, this->family, this->contig);
+		logging("Marker({}, {}, {})\n", this->id, this->family, this->contig);
 	}
 };
 
