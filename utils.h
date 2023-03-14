@@ -7,6 +7,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <set>
 
 using fmt::format;
 
@@ -16,6 +17,7 @@ using std::ofstream;
 using std::string;
 using std::vector;
 using std::map;
+using std::set;
 
 #define abs(a) (a > 0 ? a : -a)
 #define max(a, b) (a > b ? a : b)

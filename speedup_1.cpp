@@ -1,6 +1,4 @@
 #include "utils.h"
-#include <set>
-using std::set;
 
 void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& contigSize, auto& refFamilySize, auto& tarFamilySize, int& maxFamily) {
 	string contig;
@@ -87,7 +85,7 @@ void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int
 			logging("loop\n");
 	}
 }
-auto markerReorder(auto& ref, auto& tarFamilySize, int& maxFamily) {
+auto markerReorder(auto& ref, auto& tarFamilySize, int maxFamily) {
 	logging("maxFamily: {}\n", maxFamily);
 	set<int> refFamily, tarFamily;
 	vector<int> reorder(maxFamily+1, 0);
@@ -136,8 +134,7 @@ int main(int argc, char *argv[]) {
 
 	int maxFamily = 0;
 	vector<Marker> ref, tar;
-	vector<int> refFamilySize, tarFamilySize;
-	vector<int> reorder;
+	vector<int> refFamilySize, tarFamilySize, reorder;
 	map<string, int> contigSize;
 
 	// read ref/tar

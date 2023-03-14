@@ -1,6 +1,5 @@
 #include "utils.h"
 
-
 void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& contigSize, auto& refFamilySize, auto& tarFamilySize, int& maxFamily) {
 	string contig;
 	int id, family, tmp;
@@ -100,6 +99,34 @@ void speedup(auto& ref, auto& tar, auto& contigSize, auto& refFamilySize, auto& 
 			logging("loop\n");
 	}
 }
+auto markerReorder(auto& ref, auto& tarFamilySize, int maxFamily) {
+	logging("maxFamily: {}\n", maxFamily);
+	set<int> refFamily, tarFamily;
+	vector<int> reorder(maxFamily+1, 0);
+	for (Marker& m: ref)
+		if (tarFamilySize[m.absFamily] != 0)
+			refFamily.insert(m.absFamily);
+	int uid = 1;
+	for (int f: refFamily)
+		reorder[f] = uid++;
+	return reorder;
+}
+void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& reorder) {
+	int uid = 1;
+	ofstream fout(refFile);
+	for (Marker& m: ref) {
+		if (reorder[m.absFamily] != 0)
+			fout << format("{} {} {} 1\n", uid++,
+				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
+	}	fout.close();
+	uid = 1;
+	fout.open(tarFile);
+	for (Marker& m: tar) {
+		if (reorder[m.absFamily] != 0)
+			fout << format("{} {} {} 1\n", uid++,
+				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
+	}	fout.close();
+}
 void outputReducedContigs(string filename, auto& contigSize) {
 	ofstream fout(filename);
 	logging("contigSize:\n");
@@ -108,17 +135,6 @@ void outputReducedContigs(string filename, auto& contigSize) {
 			fout << format("{}\n", p.first);
 		logging("{}: {}\n", p.first, p.second);
 	}	fout.close();
-}
-void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar) {
-	ofstream fout(refFile);
-	for (Marker& m: ref) {
-		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
-	}	fout.close();
-	fout.open(tarFile);
-	for (Marker& m: tar) {
-		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
-	}	fout.close();
-	logFile.close();
 }
 int main(int argc, char *argv[]) {
 	if (argc < 4) {
@@ -129,8 +145,7 @@ int main(int argc, char *argv[]) {
 
 	int maxFamily = 0;
 	vector<Marker> ref, tar;
-	vector<int> refSurvived, tarSurvived;
-	vector<int> refFamilySize, tarFamilySize;
+	vector<int> refFamilySize, tarFamilySize, reorder;
 	map<string, int> contigSize;
 
 	// read ref/tar
@@ -138,9 +153,10 @@ int main(int argc, char *argv[]) {
 
 	// speedup 1 for exemplar model
 	speedup(ref, tar, contigSize, refFamilySize, tarFamilySize, maxFamily);
+	reorder = markerReorder(ref, tarFamilySize, maxFamily);
 
 	// output new ref/tar
-	outputNewGenome(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all", ref, tar);
+	outputNewGenome(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all", ref, tar, reorder);
 	outputReducedContigs(out_dir+"/removed_spd1.txt", contigSize);
 
 	logFile.close();
