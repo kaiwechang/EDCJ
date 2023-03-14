@@ -8,7 +8,6 @@
 #include <vector>
 #include <map>
 
-using fmt::print;
 using fmt::format;
 
 using std::ifstream;
@@ -18,8 +17,8 @@ using std::string;
 using std::vector;
 using std::map;
 
-#define max(a, b) (a > b ? a : b)
 #define abs(a) (a > 0 ? a : -a)
+#define max(a, b) (a > b ? a : b)
 
 ofstream logFile;
 
@@ -27,14 +26,12 @@ template<typename... Args>
 void logging(std::string_view fstr, Args... args) {
 	logFile << fmt::vformat(fstr, fmt::make_format_args(std::forward<Args>(args)...));
 }
-struct Telos
-{
+struct Telos {
 	int lhs, rhs;
 	Telos(void): lhs{0}, rhs{0} {}
 	Telos(int lhs, int rhs): lhs{lhs}, rhs{rhs} {}
 };
-struct Marker
-{
+struct Marker {
 	int id, family, absFamily;
 	string contig;
 

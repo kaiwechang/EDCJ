@@ -2,8 +2,7 @@
 #include <utility>
 using std::pair;
 
-void readGenome(string filename, auto& tar, auto& visited)
-{
+void readGenome(string filename, auto& tar, auto& visited) {
 	string contig;
 	int id, family, tmp;
 	ifstream fin(filename);
@@ -12,8 +11,7 @@ void readGenome(string filename, auto& tar, auto& visited)
 		visited[contig] = 0;
 	}	fin.close();
 }
-void readJoins(string filename, auto& tar, auto& joins, auto& contig2telos)
-{
+void readJoins(string filename, auto& tar, auto& joins, auto& contig2telos) {
 	int t1, t2;
 	string contig;
 	ifstream fin(filename);
@@ -27,8 +25,7 @@ void readJoins(string filename, auto& tar, auto& joins, auto& contig2telos)
 	for (auto& p: contig2telos)
 		logging("{}: ({}, {})\n", p.first, p.second.lhs, p.second.rhs);
 }
-auto scaffolding(auto& tar, auto& joins, auto& visited, auto& contig2telos)
-{
+auto scaffolding(auto& tar, auto& joins, auto& visited, auto& contig2telos) {
 	vector<vector<pair<string, int>>> scaffolds;
 
 	for (auto& p: visited) {
@@ -55,8 +52,7 @@ auto scaffolding(auto& tar, auto& joins, auto& visited, auto& contig2telos)
 	}
 	return scaffolds;
 }
-auto addReducedContigs(string filename, auto scaffolds)
-{
+auto addReducedContigs(string filename, auto scaffolds) {
 	string contig;
 	int id, family, tmp;
 	ifstream fin(filename);
@@ -65,8 +61,7 @@ auto addReducedContigs(string filename, auto scaffolds)
 	}	fin.close();
 	return scaffolds;
 }
-void readMergeContigs(string filename, auto& mergeContig)
-{
+void readMergeContigs(string filename, auto& mergeContig) {
 	int tmp;
 	string key, contig;
 	ifstream fin(filename);
@@ -86,8 +81,7 @@ void readMergeContigs(string filename, auto& mergeContig)
 			logging("  {} {}\n", cp.first, cp.second);
 	}
 }
-int mergeContigSign(string target, auto merged)
-{
+int mergeContigSign(string target, auto merged) {
 	// find target(leader) contig in the merged contigs
 	// and then return its sign
 	for (auto& mp: merged)
@@ -95,8 +89,7 @@ int mergeContigSign(string target, auto merged)
 			return mp.second;
 	return -1;
 }
-void outputScaffold(string filename, auto& scaffolds, auto& mergeContig)
-{
+void outputScaffold(string filename, auto& scaffolds, auto& mergeContig) {
 	ofstream fout(filename);
 	for (int i = 0; i < scaffolds.size(); i++) {
 		fout << format("> Scaffold_{}\n", i+1);
@@ -118,10 +111,9 @@ void outputScaffold(string filename, auto& scaffolds, auto& mergeContig)
 		}	fout << "\n";
 	}	fout.close();
 }
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	if (argc < 4) {
-		print("[error] Usage:\n>>> postprocess <tar genome> <joins.txt> <output_dir>\n");
+		fmt::print("[error] Usage:\n>>> postprocess <tar genome> <joins.txt> <output_dir>\n");
 		return 0;
 	}	string out_dir(argv[3]);
 	logFile.open(out_dir+"/postprocess.log");
@@ -145,7 +137,9 @@ int main(int argc, char *argv[])
 
 	// cut cycles
 
+	// output final scaffold
 	outputScaffold(out_dir+"/scaffolds.txt", scaffolds, mergeContig);
+
 	logFile.close();
 	return 0;
 }
