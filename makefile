@@ -34,19 +34,19 @@ run_cycle: all
 
 run_pure: all
 	$(BIN_DIR)/ilp_nocap	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/query.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/postprocess.log
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/query.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 run_spd1: all
-	$(BIN_DIR)/speedup_1	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
+	$(BIN_DIR)/speedup_1	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/postprocess.log
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 run_spd1E: all
-	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_1.log
+	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)	> $(OUT_DIR)/postprocess.log
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 experiment: all
@@ -70,7 +70,7 @@ gen_test: all
 	$(eval dup_len=5)
 	$(eval evo_num=200)
 	$(eval ref_num=10)
-	$(eval tar_num=100)
+	$(eval tar_num=50)
 	$(eval test_base="testcase/")
 	# <# initial markers> <inverse rate> <duplicate length> <# evolutions> <# ref contigs> <# tar contigs> <output_dir>
 	for inv in 10 20 30 40 50 60 70 80 90 100; do	\
