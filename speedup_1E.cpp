@@ -99,17 +99,16 @@ void speedup(auto& ref, auto& tar, auto& contigSize, auto& refFamilySize, auto& 
 			logging("loop\n");
 	}
 }
-auto markerReorder(auto& ref, auto& tarFamilySize, int maxFamily) {
+void markerReorder(auto& ref, auto& tarFamilySize, int maxFamily, auto& reorder) {
 	logging("maxFamily: {}\n", maxFamily);
 	set<int> refFamily, tarFamily;
-	vector<int> reorder(maxFamily+1, 0);
+	reorder.assign(maxFamily+1, 0);
 	for (Marker& m: ref)
 		if (tarFamilySize[m.absFamily] != 0)
 			refFamily.insert(m.absFamily);
 	int uid = 1;
 	for (int f: refFamily)
 		reorder[f] = uid++;
-	return reorder;
 }
 void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& reorder) {
 	int uid = 1;
@@ -153,7 +152,7 @@ int main(int argc, char *argv[]) {
 
 	// speedup 1 for exemplar model
 	speedup(ref, tar, contigSize, refFamilySize, tarFamilySize, maxFamily);
-	reorder = markerReorder(ref, tarFamilySize, maxFamily);
+	markerReorder(ref, tarFamilySize, maxFamily, reorder);
 
 	// output new ref/tar
 	outputNewGenome(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all", ref, tar, reorder);

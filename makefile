@@ -1,7 +1,7 @@
 CC = gcc
 CXX = g++
 CFLAGS = -O3 -lm
-CXXFLAGS = $(CFLAGS) -std=c++20 -lfmt
+CXXFLAGS = $(CFLAGS) -std=c++2a -lfmt -fconcepts
 
 LOCAL_LIB = -lgurobi100
 SERVER_LIB = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/lib -lgurobi95
@@ -29,28 +29,28 @@ run_cycle: all
 	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
 	$(BIN_DIR)/speedup_3	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_3.log
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 run_pure: all
 	$(BIN_DIR)/ilp_nocap	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/query.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
+	$(BIN_DIR)/postprocess	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 run_spd1: all
 	$(BIN_DIR)/speedup_1	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 run_spd1E: all
 	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
-	$(BIN_DIR)/postprocess	$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)/joins.txt		$(OUT_DIR)
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
 experiment: all
-	$(eval test_base="../testcase/sim_5000")
+	$(eval test_base="../testcase/sim_2000_50")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
