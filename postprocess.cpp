@@ -1,6 +1,7 @@
 #include "utils.h"
 #include <utility>
 using std::pair;
+using std::make_pair;
 
 void readGenome(string refFile, string tarFile, auto& ref, auto& tar) {
 	string contig;
@@ -84,8 +85,67 @@ void addReducedContigs(string filename, auto& scaffolds) {
 		scaffolds.push_back(vector<pair<string, int>>(1, make_pair(contig, 0)));
 	}	fin.close();
 }
-void cutCycle(auto& ref, auto& tar, auto& scaffolds) {
+void cutCycle(auto& ref, auto& tar, auto& contig2telos, auto& scaffolds) {
+	// store ref adjacencies (in "signed extremities" format)
+	set<pair<int, int>> refAdj;
+	for (int i = 0; i < ref.size()-1; i++)
+		if (ref[i].contig == ref[i+1].contig)
+			refAdj.insert(ref[i].absFamily < ref[i+1].absFamily ?
+				make_pair( ref[i  ].family, -ref[i+1].family) :
+				make_pair(-ref[i+1].family,  ref[i  ].family));
+	for (auto& p: refAdj)
+		fmt::print("adj: ({}, {})\n", p.first, p.second);
 
+	// collect candidate cuts
+	for (auto& scaff: scaffolds) {
+		if (scaff.size() < 2)
+			continue;
+		vector<pair<int, int>> candicates;
+
+		fmt::print("scaff\n");
+		for (int i = 0; i < scaff.size(); i++) {
+			int idx1 = i, idx2 = i == scaff.size()-1 ? 0 : i+1 ;
+			Telos tp1 = contig2telos[scaff[idx1].first];
+			Telos tp2 = contig2telos[scaff[idx2].first];
+			int t1 = scaff[idx1].second == 0 ? tp1.rhs : tp1.lhs ;
+			int t2 = scaff[idx2].second == 0 ? tp2.lhs : tp2.rhs ;
+			int s1 = t1 > 0 ? 1 : -1, s2 = t2 > 0 ? 1 : -1 ;
+			Marker& m1 = tar[abs(t1)-1], m2 = tar[abs(t2)-1];
+			auto p = m1.absFamily < m2.absFamily ?
+				make_pair(s1 * m1.absFamily, s2 * m2.absFamily): 
+				make_pair(s2 * m2.absFamily, s1 * m1.absFamily);
+
+			if (refAdj.count(p) == 0) {
+				fmt::print("  ({}, {}): ({}, {})\n", p.first, p.second, idx1, idx2);
+				candicates.push_back(make_pair(idx1, idx2));
+			}
+		}
+
+		// determine which join to cut
+		int cut = 2;
+		// map<absFamily, map<contig, pair<indexSum, familyNum>>>
+		map<int, map<string, pair<int, int>>> score;
+		for (int i = 0; i < ref.size(); i++) {
+			auto& p = score[ref[i].absFamily][ref[i].contig];
+			p.first += i, p.second++;
+		}
+		for (Marker& m: tar) {
+
+		}
+		for (auto& fp: score) {
+			fmt::print("family {}:\n", fp.first);
+			for (auto& cp: fp.second)
+				fmt::print("    {}: {}/{}\n", cp.first, cp.second.first, cp.second.second);
+		}
+
+		// cut scaffold
+		vector<pair<string, int>> newScaffold;
+		for (int i = candicates[cut].second; i < scaff.size(); i++)
+			newScaffold.push_back(scaff[i]);
+		for (int i = 0; i < candicates[cut].second; i++)
+			newScaffold.push_back(scaff[i]);
+		scaff = newScaffold;
+	}
 }
 void outputScaffold(string filename, auto& scaffolds, auto& mergeContig) {
 	auto mergeContigSign = [&](string target, auto merged) {
@@ -142,7 +202,7 @@ int main(int argc, char *argv[]) {
 	addReducedContigs(out_dir+"/removed_spd1.txt", scaffolds);
 
 	// cut cycles
-	cutCycle(ref, tar, scaffolds);
+	//cutCycle(ref, tar, contig2telos, scaffolds);
 
 	// output final scaffold
 	outputScaffold(out_dir+"/scaffolds.txt", scaffolds, mergeContig);

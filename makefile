@@ -10,7 +10,7 @@ GUROBI_FLAGS = -m64 -g $(LOCAL_LIB) -lgurobi_c++
 BIN_DIR = bin
 OUT_DIR = output
 #TEST_DIR = ../testcase/EI_test
-#TEST_DIR = ../testcase/sim_1000/simData_smaller/sim1
+#TEST_DIR = ../testcase/sim_smaller/sim1
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_80_5_100_1_30/1
 
 TARGETS = $(patsubst %.cpp, %, $(shell ls *.cpp))
