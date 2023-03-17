@@ -21,15 +21,30 @@ void readJoins(string filename, auto& tar, auto& joins, auto& contig2telos) {
 	ifstream fin(filename);
     while (fin >> contig >> t1 >> t2) {
 		joins[t1] = t2, joins[t2] = t1;
-		Marker m1 = tar[abs(t1)-1], m2 = tar[abs(t2)-1];
-		t1 * m1.family > 0 ? contig2telos[m1.contig].rhs = t1 : contig2telos[m1.contig].lhs = t1;
-		t2 * m2.family > 0 ? contig2telos[m2.contig].rhs = t2 : contig2telos[m2.contig].lhs = t2;
+		//Marker m1 = tar[abs(t1)-1], m2 = tar[abs(t2)-1];
+		//t1 * m1.family > 0 ? contig2telos[m1.contig].rhs = t1 : contig2telos[m1.contig].lhs = t1;
+		//t2 * m2.family > 0 ? contig2telos[m2.contig].rhs = t2 : contig2telos[m2.contig].lhs = t2;
 	}	fin.close();
 
+	// make contig2telos
+	for (int i = 0; i < tar.size(); i++) {
+		int s1 = tar[i  ].family > 0 ? 1 : -1 ;
+		int s2 = tar[i+1].family > 0 ? 1 : -1 ;
+		if (i == 0)
+			contig2telos[tar[i].contig].lhs = -s1 * tar[i].id;
+		if (i == tar.size()-1) {
+			contig2telos[tar[i].contig].rhs =  s1 * tar[i].id;
+			break;
+		}
+		if (tar[i].contig != tar[i+1].contig) {
+			contig2telos[tar[i  ].contig].rhs =  s1 * tar[i  ].id;
+			contig2telos[tar[i+1].contig].lhs = -s2 * tar[i+1].id;
+		}
+	}
 	for (auto& p: contig2telos)
 		logging("{}: ({}, {})\n", p.first, p.second.lhs, p.second.rhs);
 }
-void readMergeContigs(string filename, auto& mergeContig) {
+void readMergeContigs(string filename, auto& tar, auto& mergeContig) {
 	int tmp;
 	string key, contig;
 	ifstream fin(filename);
@@ -48,11 +63,24 @@ void readMergeContigs(string filename, auto& mergeContig) {
 		for (auto& cp: p.second)
 			logging("  {} {}\n", cp.first, cp.second);
 	}
+
+	// 2023_0317: merge with joins
+	/*for (auto& p: mergeContig) {
+		fmt::print("joins {}:\n", p.first);
+		for (int i = 0; i < p.second.size()-1; i++) {
+			auto& tp1 = contig2telos[p.second[i  ].first];
+			auto& tp2 = contig2telos[p.second[i+1].first];
+			int t1 = p.second[i  ].second == 0 ? tp1.rhs: tp1.lhs;
+			int t2 = p.second[i+1].second == 0 ? tp2.lhs: tp2.rhs;
+			fmt::print("  {}, {}\n", t1, t2);
+			joins[t1] = t2, joins[t2] = t1;
+		}
+	}*/
 }
 void scaffolding(auto& tar, auto& joins, auto& contig2telos, auto& scaffolds) {
 	map<string, bool> visited;
-	for (auto& p: contig2telos)
-		visited[p.first] = false;
+	for (Marker& m: tar)
+		visited[m.contig] = false;
 
 	for (auto& p: visited) {
 		Telos tp = contig2telos[p.first];
@@ -195,7 +223,7 @@ int main(int argc, char *argv[]) {
 	// read files
 	readGenome(argv[1], argv[2], ref, tar);
 	readJoins(out_dir+"/joins.txt", tar, joins, contig2telos);
-	readMergeContigs(out_dir+"/tar_merge.txt", mergeContig);
+	readMergeContigs(out_dir+"/tar_merge.txt", tar, mergeContig);
 
 	// scaffolding
 	scaffolding(tar, joins, contig2telos, scaffolds);
