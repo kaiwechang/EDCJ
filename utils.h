@@ -22,6 +22,9 @@ using std::set;
 #define abs(a) (a > 0 ? a : -a)
 #define max(a, b) (a > b ? a : b)
 
+#define sign(a) ((a > 0) - (a < 0))
+#define idx(t) (abs(t)-1)	// telos (signed id) to index
+
 ofstream logFile;
 
 template<typename... Args>
@@ -29,9 +32,10 @@ void logging(std::string_view fstr, Args... args) {
 	logFile << fmt::vformat(fstr, fmt::make_format_args(std::forward<Args>(args)...));
 }
 struct Telos {
-	int lhs, rhs;
-	Telos(void): lhs{0}, rhs{0} {}
-	Telos(int lhs, int rhs): lhs{lhs}, rhs{rhs} {}
+	// a telo is stored as its signed id ((+) for head, (-) for tail)
+	int lhs, rhs;	// telo on the left/right hand side of a contig
+	int ljs, rjs;	// telo on other contig joined with lhs/rhs, 0 when no join
+	Telos(void): lhs{0}, rhs{0}, ljs{0}, rjs{0} {}
 };
 struct Marker {
 	int id, family, absFamily;
