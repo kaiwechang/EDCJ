@@ -19,14 +19,21 @@ using std::vector;
 using std::map;
 using std::set;
 
-#define abs(a) (a > 0 ? a : -a)
-#define max(a, b) (a > b ? a : b)
-
-#define sign(a) ((a > 0) - (a < 0))
-#define idx(t) (abs(t)-1)	// telos (signed id) to index
-
 ofstream logFile;
 
+int abs(int a) {
+	return a > 0 ? a : -a ;
+}
+int max(int a, int b) {
+	return a > b ? a : b ;
+}
+int sign(int a) {
+	return (a > 0) - (a < 0);
+}
+// telos (signed id) to index
+int idx(int t) {
+	return abs(t)-1;
+}
 template<typename... Args>
 void logging(std::string_view fstr, Args... args) {
 	logFile << fmt::vformat(fstr, fmt::make_format_args(std::forward<Args>(args)...));
