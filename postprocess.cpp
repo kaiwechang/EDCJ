@@ -76,24 +76,27 @@ void scaffolding(auto& tar, auto& tarTelos, auto& scaffolds) {
 		visited[m.contig] = false;
 
 	for (auto& p: visited) {
-		Telos tp = tarTelos[p.first];
 		vector<pair<string, int>> curScaffold;
-		if (tp.ljs == 0 && tp.rjs == 0 || p.second)
+		if (p.second)
 			continue;
+
+		curScaffold.push_back(make_pair(p.first, 0));
+		visited[p.first] = true;
+
 		// traverse scaffolds
-		string curContig = p.first;
-		int curTelo = tp.rjs ? tp.rhs : tp.lhs;
-		while (!p.second) {
-			Telos ctp = tarTelos[curContig];
-			int nextTelo = curTelo == ctp.rhs ? ctp.rjs : ctp.ljs ;
-			string nextContig = tar[idx(nextTelo)].contig;
+		Telos tp = tarTelos[p.first];
+		int hs = tp.rhs, js = tp.rjs;
+		while (js != 0) {
+			string nc = tar[idx(js)].contig;
+			if (visited[nc])
+				break;
 
-			curScaffold.push_back(make_pair(curContig, curTelo == ctp.lhs ? 1 : 0));
-			visited[nextContig] = true;
+			Telos ntp = tarTelos[tar[idx(js)].contig];
+			curScaffold.push_back(make_pair(nc, js == ntp.lhs ? 0 : 1));
+			visited[nc] = true;
 
-			curContig = nextContig;
-			Telos ntp = tarTelos[nextContig];
-			curTelo = nextTelo == ntp.lhs ? ntp.rhs : ntp.lhs;
+			hs = js == ntp.lhs ? ntp.rhs : ntp.lhs ;
+			js = js == ntp.lhs ? ntp.rjs : ntp.ljs ;
 		}	scaffolds.push_back(curScaffold);
 	}
 }

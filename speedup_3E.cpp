@@ -47,15 +47,22 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refF
 	for (auto& p: tarTelos)
 		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
 }
-void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, auto& refTelos, auto& tarTelos) {
+void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, auto& refTelos, auto& tarTelos, bool extended) {
 	auto concat = [&](auto& solid, int i, int f1, int f2, int hs1, int hs2, int& js1, int& js2) {
+		if (extended &&
+			// at least one singleton
+			!(refFamilySize[solid[i  ].absFamily] == 1 && tarFamilySize[solid[i  ].absFamily] == 1 ||
+			  refFamilySize[solid[i+1].absFamily] == 1 && tarFamilySize[solid[i+1].absFamily] == 1))
+			return;
+		if (!extended &&
+			// all singleton
+			!(refFamilySize[solid[i  ].absFamily] == 1 && tarFamilySize[solid[i  ].absFamily] == 1 &&
+			  refFamilySize[solid[i+1].absFamily] == 1 && tarFamilySize[solid[i+1].absFamily] == 1))
+			return;
 		if (// not joined yet
 			js1 == 0 && js2 == 0 &&
 			// solid ?
 			solid[i].contig == solid[i+1].contig &&
-			// all singleton
-			(refFamilySize[solid[i  ].absFamily] == 1 && tarFamilySize[solid[i  ].absFamily] == 1 ||
-			 refFamilySize[solid[i+1].absFamily] == 1 && tarFamilySize[solid[i+1].absFamily] == 1) &&
 			// adjacency ?
 			(solid[i].family ==  f1 && solid[i+1].family ==  f2 ||
 			 solid[i].family == -f2 && solid[i+1].family == -f1)) {
@@ -188,7 +195,8 @@ int main(int argc, char *argv[]) {
 	readGenome(argv[1], argv[2], ref, tar, refFamilySize, tarFamilySize, maxFamily, refTelos, tarTelos);
 
 	// speedup 1
-	speedup(ref, tar, refFamilySize, tarFamilySize, refTelos, tarTelos);
+	bool extended = argc == 4 ? false : true ;
+	speedup(ref, tar, refFamilySize, tarFamilySize, refTelos, tarTelos, extended);
 	ref = joinGenome(ref, refTelos, refDraft);
 	tar = joinGenome(tar, tarTelos, tarDraft);
 

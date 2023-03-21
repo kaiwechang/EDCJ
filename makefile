@@ -12,6 +12,7 @@ OUT_DIR = output
 #TEST_DIR = ../testcase/EI_test
 #TEST_DIR = ../testcase/sim_smaller/sim1
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_80_5_100_1_30/1
+#TEST_DIR = ../testcase/sim_2000_50/sim_2000_30_5_200_10_50/2
 
 TARGETS = $(patsubst %.cpp, %, $(shell ls *.cpp))
 
@@ -27,8 +28,8 @@ $(BIN_DIR)/%: %.cpp
 
 run_cycle: all
 	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
-	#$(BIN_DIR)/speedup_3	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_3.log
-	$(BIN_DIR)/speedup_3E	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
+	$(BIN_DIR)/speedup_3	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	> $(OUT_DIR)/speedup_3.log
+	#$(BIN_DIR)/speedup_3E	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
 	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
 	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)
 #	(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
@@ -51,12 +52,26 @@ run_spd1E: all
 	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
+run_spd3: all
+	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
+	$(BIN_DIR)/speedup_3E	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)
+	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)
+	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
+
+run_spd3E: all
+	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
+	$(BIN_DIR)/speedup_3E	$(OUT_DIR)/ref_spd1.all		$(OUT_DIR)/tar_spd1.all		$(OUT_DIR)	extended
+	$(BIN_DIR)/ilp_nocap	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)	> $(OUT_DIR)/ilp.log
+	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)
+	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
+
 experiment: all
-	$(eval test_base="../testcase/sim_1000/simdata1")
+	$(eval test_base="../testcase/sim_2000_50")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
-			for method in cycle; do							\
+			for method in spd3 spd3E; do					\
 				tar_dir=$(out_base)/$$dir/$$sub/$$method;	\
 				mkdir -p $$tar_dir;							\
 				time -f %e -o $$tar_dir/time.txt			\
