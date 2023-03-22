@@ -66,12 +66,21 @@ run_spd3E: all
 	$(BIN_DIR)/postprocess	$(OUT_DIR)/ref_spd3.all		$(OUT_DIR)/tar_spd3.all		$(OUT_DIR)
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/scaffolds.txt				> $(OUT_DIR)/evaulate.txt
 
+run_EBD: mkdir
+	cd ../related_software/EBD_Scaffolder;			\
+	./EBD_Scaffolder -s _Sibelia_ -m 70 -i 1800 -e	\
+	-cr ../$(TEST_DIR)/reference.all				\
+	-ct ../$(TEST_DIR)/query.all					\
+	-o ../../src/$(OUT_DIR)/result					\
+	 > ../../src/$(OUT_DIR)/EBD_Scaffolder.log
+	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/result/ScaffoldResult		> $(OUT_DIR)/evaulate.txt
+
 experiment: all
-	$(eval test_base="../testcase/sim_2000_50")
+	$(eval test_base="../testcase/sim_2000_100")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
-			for method in spd3 spd3E; do					\
+			for method in EBD spd3 spd3E; do				\
 				tar_dir=$(out_base)/$$dir/$$sub/$$method;	\
 				mkdir -p $$tar_dir;							\
 				time -f %e -o $$tar_dir/time.txt			\
