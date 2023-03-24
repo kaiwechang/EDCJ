@@ -3,8 +3,8 @@
 using std::pair;
 using std::make_pair;
 
-void readGenome(string refFile, string tarFile, auto& ref, auto& tar) {
-	string contig;
+void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& tarOrder) {
+	string contig, prevContig = "";
 	int id, family, tmp;
 	ifstream fin(refFile);
 	while (fin >> id >> family >> contig >> tmp) {
@@ -13,6 +13,10 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar) {
 	fin.open(tarFile);
 	while (fin >> id >> family >> contig >> tmp) {
 		tar.push_back(Marker(id, family, contig));
+		if (contig != prevContig) {
+			tarOrder.push_back(contig);
+			prevContig = contig;
+		}
 	}	fin.close();
 }
 void readJoins(string filename, auto& tar, auto& tarTelos) {
@@ -70,21 +74,21 @@ void readMergeContigs(string filename, auto& tar, auto& mergeContig) {
 		}
 	}*/
 }
-void scaffolding(auto& tar, auto& tarTelos, auto& scaffolds) {
+void scaffolding(auto& tar, auto& tarTelos, auto& tarOrder, auto& scaffolds) {
 	map<string, bool> visited;
 	for (Marker& m: tar)
 		visited[m.contig] = false;
 
-	for (auto& p: visited) {
+	for (string& str: tarOrder) {
 		vector<pair<string, int>> curScaffold;
-		if (p.second)
+		if (visited[str])
 			continue;
 
-		curScaffold.push_back(make_pair(p.first, 0));
-		visited[p.first] = true;
+		curScaffold.push_back(make_pair(str, 0));
+		visited[str] = true;
 
 		// traverse scaffolds
-		Telos tp = tarTelos[p.first];
+		Telos tp = tarTelos[str];
 		int hs = tp.rhs, js = tp.rjs;
 		while (js != 0) {
 			string nc = tar[idx(js)].contig;
@@ -147,18 +151,19 @@ int main(int argc, char *argv[]) {
 	logFile.open(out_dir+"/postprocess.log");
 
 	vector<Marker> ref, tar;
+	vector<string> tarOrder;
 	vector<vector<pair<string, int>>> scaffolds;
 
 	map<string, Telos> tarTelos;
 	map<string, vector<pair<string, int>>> mergeContig;
 
 	// read files
-	readGenome(argv[1], argv[2], ref, tar);
+	readGenome(argv[1], argv[2], ref, tar, tarOrder);
 	readJoins(out_dir+"/joins.txt", tar, tarTelos);
 	readMergeContigs(out_dir+"/tar_merge.txt", tar, mergeContig);
 
 	// scaffolding
-	scaffolding(tar, tarTelos, scaffolds);
+	scaffolding(tar, tarTelos, tarOrder, scaffolds);
 	addReducedContigs(out_dir+"/removed_spd1.txt", scaffolds);
 
 	// output final scaffold

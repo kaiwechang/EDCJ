@@ -5,19 +5,29 @@ using std::pair;
 using std::deque;
 using std::make_pair;
 
-void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTelos, auto& tarTelos) {
-	string contig;
+void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTelos, auto& tarTelos, auto& refOrder, auto& tarOrder) {
+	string contig, prevContig = "";
 	int id, family, tmp;
 
 	ifstream fin(refFile);
 	while (fin >> id >> family >> contig >> tmp) {
 		ref.push_back(Marker(id, family, contig));
 		maxFamily = max(maxFamily, abs(family));
+		if (contig != prevContig) {
+			refOrder.push_back(contig);
+			prevContig = contig;
+		}
 	}	fin.close();
+	prevContig = "";
+
 	fin.open(tarFile);
 	while (fin >> id >> family >> contig >> tmp) {
 		tar.push_back(Marker(id, family, contig));
 		maxFamily = max(maxFamily, abs(family));
+		if (contig != prevContig) {
+			tarOrder.push_back(contig);
+			prevContig = contig;
+		}
 	}	fin.close();
 
 	// count family size
@@ -98,7 +108,7 @@ void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, aut
 	for (auto& p: tarTelos)
 		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
 }
-auto joinGenome(auto& genome, auto& contig2telos, auto& draft) {
+auto joinGenome(auto& genome, auto& contig2telos, auto& draft, auto& genomeOrder) {
 	map<string, bool> visited;
 	auto travse = [&](auto& curScaffold, Telos tp, bool right) {
 		int hs = right ? tp.rhs : tp.lhs ;
@@ -121,14 +131,14 @@ auto joinGenome(auto& genome, auto& contig2telos, auto& draft) {
 	};
 	for (Marker& m: genome)
 		visited[m.contig] = false;
-	for (auto& p: visited) {
+	for (string& str: genomeOrder) {
 		deque<pair<string, int>> curScaffold;
-		if (p.second)
+		if (visited[str])
 			continue;
-		Telos tp = contig2telos[p.first];
+		Telos tp = contig2telos[str];
 
-		curScaffold.push_back(make_pair(p.first, 0));
-		visited[p.first] = true;
+		curScaffold.push_back(make_pair(str, 0));
+		visited[str] = true;
 
 		travse(curScaffold, tp, true);
 		travse(curScaffold, tp, false);
@@ -187,18 +197,20 @@ int main(int argc, char *argv[]) {
 
 	int maxFamily = 0;
 	vector<Marker> ref, tar;
+	vector<string> refOrder, tarOrder;
 	vector<int> refFamilySize, tarFamilySize, reorder;
 	vector<deque<pair<string, int>>> refDraft, tarDraft;
 	map<string, Telos> refTelos, tarTelos;
 
 	// read ref/tar
-	readGenome(argv[1], argv[2], ref, tar, refFamilySize, tarFamilySize, maxFamily, refTelos, tarTelos);
+	readGenome(argv[1], argv[2], ref, tar, refFamilySize, tarFamilySize, maxFamily,
+								 refTelos, tarTelos, refOrder, tarOrder);
 
 	// speedup 1
 	bool extended = argc == 4 ? false : true ;
 	speedup(ref, tar, refFamilySize, tarFamilySize, refTelos, tarTelos, extended);
-	ref = joinGenome(ref, refTelos, refDraft);
-	tar = joinGenome(tar, tarTelos, tarDraft);
+	ref = joinGenome(ref, refTelos, refDraft, refOrder);
+	tar = joinGenome(tar, tarTelos, tarDraft, tarOrder);
 
 	// output new ref/tar & mergeContigs
 	outputNewGenome(out_dir+"/ref_spd3.all", out_dir+"/tar_spd3.all", ref, tar, reorder);
