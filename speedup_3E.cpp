@@ -6,28 +6,18 @@ using std::deque;
 using std::make_pair;
 
 void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTelos, auto& tarTelos, auto& refOrder, auto& tarOrder) {
-	string contig, prevContig = "";
+	string contig;
 	int id, family, tmp;
 
 	ifstream fin(refFile);
 	while (fin >> id >> family >> contig >> tmp) {
 		ref.push_back(Marker(id, family, contig));
 		maxFamily = max(maxFamily, abs(family));
-		if (contig != prevContig) {
-			refOrder.push_back(contig);
-			prevContig = contig;
-		}
 	}	fin.close();
-	prevContig = "";
-
 	fin.open(tarFile);
 	while (fin >> id >> family >> contig >> tmp) {
 		tar.push_back(Marker(id, family, contig));
 		maxFamily = max(maxFamily, abs(family));
-		if (contig != prevContig) {
-			tarOrder.push_back(contig);
-			prevContig = contig;
-		}
 	}	fin.close();
 
 	// count family size
@@ -56,6 +46,20 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refF
 	logging("tarTelos:\n");
 	for (auto& p: tarTelos)
 		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
+
+	// contig order
+	for (int i = 0; i < ref.size()-1; i++) {
+		if (i == 0)
+			refOrder.push_back(ref[i].contig);
+		if (ref[i].contig != ref[i+1].contig)
+			refOrder.push_back(ref[i+1].contig);
+	}
+	for (int i = 0; i < tar.size()-1; i++) {
+		if (i == 0)
+			tarOrder.push_back(tar[i].contig);
+		if (tar[i].contig != tar[i+1].contig)
+			tarOrder.push_back(tar[i+1].contig);
+	}
 }
 void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, auto& refTelos, auto& tarTelos, bool extended) {
 	auto concat = [&](auto& solid, int i, int f1, int f2, int hs1, int hs2, int& js1, int& js2) {
@@ -70,7 +74,7 @@ void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, aut
 			  refFamilySize[solid[i+1].absFamily] == 1 && tarFamilySize[solid[i+1].absFamily] == 1))
 			return;
 		if (// not joined yet
-			js1 == 0 && js2 == 0 &&
+			//js1 == 0 && js2 == 0 &&
 			// solid ?
 			solid[i].contig == solid[i+1].contig &&
 			// adjacency ?
@@ -81,16 +85,17 @@ void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, aut
 	};
 	auto iterTelos = [&](auto& g1, auto& g2, auto& contig2telos) {
 		for (int i = 0; i < g1.size()-1; i++)
-			for (auto& cp1: contig2telos)
-				for (auto& cp2: contig2telos) {
-					if (cp1.first == cp2.first)
+			for (auto it1 = tarTelos.begin(); std::next(it1, 1) != tarTelos.end(); it1++)
+				for (auto it2 = std::next(it1, 1); it2 != tarTelos.end(); it2++) {
+					auto& [c1, tp1] = *it1;
+					auto& [c2, tp2] = *it2;
+					if (c1 == c2)
 						continue;
-					int f1l = g2[idx(cp1.second.lhs)].family;
-					int f1r = g2[idx(cp1.second.rhs)].family;
-					int f2l = g2[idx(cp2.second.lhs)].family;
-					int f2r = g2[idx(cp2.second.rhs)].family;
-					Telos& tp1 = cp1.second;
-					Telos& tp2 = cp2.second;
+					//fmt::print("ref[{}]: ({}, {})\n", i, cp1.first, cp2.first);
+					int f1l = g2[idx(tp1.lhs)].family;
+					int f1r = g2[idx(tp1.rhs)].family;
+					int f2l = g2[idx(tp2.lhs)].family;
+					int f2r = g2[idx(tp2.rhs)].family;
 					concat(g1, i,  f1l, -f2l, tp1.lhs, tp2.lhs, tp1.ljs, tp2.ljs);
 					concat(g1, i, -f1l, -f2r, tp1.lhs, tp2.rhs, tp1.ljs, tp2.rjs);
 					concat(g1, i,  f1r,  f2l, tp1.rhs, tp2.lhs, tp1.rjs, tp2.ljs);

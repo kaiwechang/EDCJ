@@ -4,7 +4,7 @@ using std::pair;
 using std::make_pair;
 
 void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& tarOrder) {
-	string contig, prevContig = "";
+	string contig;
 	int id, family, tmp;
 	ifstream fin(refFile);
 	while (fin >> id >> family >> contig >> tmp) {
@@ -13,11 +13,15 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& tarO
 	fin.open(tarFile);
 	while (fin >> id >> family >> contig >> tmp) {
 		tar.push_back(Marker(id, family, contig));
-		if (contig != prevContig) {
-			tarOrder.push_back(contig);
-			prevContig = contig;
-		}
 	}	fin.close();
+
+	// tar contig order
+	for (int i = 0; i < tar.size()-1; i++) {
+		if (i == 0)
+			tarOrder.push_back(tar[i].contig);
+		if (tar[i].contig != tar[i+1].contig)
+			tarOrder.push_back(tar[i+1].contig);
+	}
 }
 void readJoins(string filename, auto& tar, auto& tarTelos) {
 	// construct tarTelos
