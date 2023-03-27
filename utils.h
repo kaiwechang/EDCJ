@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 
+using fmt::print;
 using fmt::format;
 
 using std::ifstream;
@@ -26,6 +27,9 @@ int abs(int a) {
 }
 int max(int a, int b) {
 	return a > b ? a : b ;
+}
+int min(int a, int b) {
+	return a < b ? a : b ;
 }
 int sign(int a) {
 	return (a > 0) - (a < 0);

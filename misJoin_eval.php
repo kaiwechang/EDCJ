@@ -506,13 +506,13 @@ else{
 	
 //	print "<#Scaffolds> <#Multi-contig scaffolds> <#MisJoins> <#Joins> <Sen.> <Pre.> <Fscore>\n";
 //	print "$all_scaffold\t$multiContig_scaffold\t$merge_error\t$num_mergePoint\t$sens\t$prec\t$Fscore\n";
-	printf("Scaffolds:		%5d\n", $all_scaffold);
-	printf("Multi-contig:	%5d\n", $multiContig_scaffold);
-	printf("MisJoins:		%5d\n", $merge_error);
-	printf("Joins:			%5d\n", $num_mergePoint);
-	printf("Sensitivity:	%2.3f\n", $sens);
-	printf("Precision:		%2.3f\n", $prec);
-	printf("Fscore:			%2.3f\n", $Fscore);
+	printf("Scaffolds:      %5d\n", $all_scaffold);
+	printf("Multi-contig:   %5d\n", $multiContig_scaffold);
+	printf("MisJoins:       %5d\n", $merge_error);
+	printf("Joins:          %5d\n", $num_mergePoint);
+	printf("Sensitivity:    %2.3f\n", $sens);
+	printf("Precision:      %2.3f\n", $prec);
+	printf("Fscore:         %2.3f\n", $Fscore);
 
 }
 //print "Mis-joining rate: ".$merge_error/$num_mergePoint."\n";
