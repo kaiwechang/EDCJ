@@ -195,16 +195,14 @@ void cycleEdgeConstr(auto& ref, auto& tar, GRBModel* model, auto& refMatchVars, 
 		}
 	}
 }
-void objective(GRBModel* model, auto& refCycleVars, auto& tarCycleVars, auto& refMatchVars, auto& tarMatchVars) {
-	GRBLinExpr cycleSum = 0;
+void objective(GRBModel* model, auto& refCycleVars, auto& tarCycleVars, auto& refMatchVars, auto& tarMatchVars, auto& cycleSum, auto& indelSum) {
 	for (auto& v: refCycleVars)	cycleSum += v;
 	for (auto& v: tarCycleVars)	cycleSum += v;
 
-	GRBLinExpr indelSum = 0;
 	for (auto& v: refMatchVars)	indelSum += v;
 	for (auto& v: tarMatchVars)	indelSum += v;
 
-	//model->setObjective(-indelSum-cycleSum);
+	//model->setObjective(-indelSum-cycleSum);	// intermediate only (?)
 	model->setObjective(-cycleSum);
 	model->update();
 	model->optimize();
@@ -222,6 +220,48 @@ void outputJoins(string filename, auto& ref, auto& tar, auto& refPAVars, auto& t
 		if (v.get(GRB_DoubleAttr_X) == 1)
 			fout << format("marker {} {}\n", i2t(tar, i), i2t(tar, j));
 	}	fout.close();
+}
+void debug(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars, auto& cycleSum, auto& indelSum) {
+	logging("basic infos:\n");
+	logging("-------+-------+-------+\n");
+	logging("   num |   ref |   tar |\n");
+	logging("-------+-------+-------+\n");
+	logging("marker | {:5d} | {:5d} |\n", ref.size(), tar.size());
+	logging("contig | {:5d} | {:5d} |\n", refTeloIdx.size()/2, tarTeloIdx.size()/2);
+	logging("-------+-------+-------+\n");
+	logging("    PA | {:5d} | {:5d} |\n", refPAVars.size(), tarPAVars.size());
+	logging("-------+-------+-------+\n");
+	logging("  pair | {:13d} |\n", pairVars.size());
+	logging(" cycle | {:13d} |\n", (int)cycleSum.getValue());
+	logging(" indel | {:13d} |\n", (int)indelSum.getValue());
+	logging("-------+---------------+\n");
+	logging("\nref/tar genome:\n");
+	logging("-----+--------------------+-------------+\n");
+	logging(" idx |  id family  contig | del lab  ub |\n");
+	logging("-----+--------------------+-------------+\n");
+	for (int i = 0; i < 2*ref.size(); i++)
+		logging(" {:3d} | {:3d} {:3d} {:>10s} | {:3d} {:3d} {:3d} |\n", i, ref[i/2].id, ref[i/2].family, ref[i/2].contig, (int)refMatchVars[i/2].get(GRB_DoubleAttr_X), (int)refLabelVars[i].get(GRB_DoubleAttr_X), (int)refLabelVars[i].get(GRB_DoubleAttr_UB));
+	logging("-----+--------------------+-------------+\n");
+	for (int i = 0; i < 2*tar.size(); i++)
+		logging(" {:3d} | {:3d} {:3d} {:>10s} | {:3d} {:3d} {:3d} |\n", i, tar[i/2].id, tar[i/2].family, tar[i/2].contig, (int)tarMatchVars[i/2].get(GRB_DoubleAttr_X), (int)tarLabelVars[i].get(GRB_DoubleAttr_X), (int)tarLabelVars[i].get(GRB_DoubleAttr_UB));
+	logging("-----+--------------------+-------------+\n");
+	logging("\npairing variables:\n");
+	logging("+---------+-----+\n");
+	logging("| ref tar | var |\n");
+	logging("+---------+-----+\n");
+	for (auto& [p, v]: pairVars)
+		logging("| {:3d} {:3d} | {:3d} |\n", p.first, p.second, (int)v.get(GRB_DoubleAttr_X));
+	logging("+---------+-----+\n");
+	logging("\npotential adjacencies:\n");
+	logging("+---------+-----+\n");
+	logging("| idx jdx | var |\n");
+	logging("+---------+-----+\n");
+	for (auto& [p, v]: refPAVars)
+		logging("| {:3d} {:3d} | {:3d} |\n", p.first, p.second, (int)v.get(GRB_DoubleAttr_X));
+	logging("+---------+-----+\n");
+	for (auto& [p, v]: tarPAVars)
+		logging("| {:3d} {:3d} | {:3d} |\n", p.first, p.second, (int)v.get(GRB_DoubleAttr_X));
+	logging("+---------+-----+\n");
 }
 int main(int argc, char *argv[]) {
 	if (argc < 4) {
@@ -242,9 +282,10 @@ int main(int argc, char *argv[]) {
 	vector<GRBVar> refMatchVars, tarMatchVars;
 	vector<GRBVar> refLabelVars, tarLabelVars;
 	vector<GRBVar> refCycleVars, tarCycleVars;
-	map<pair<int, int>, GRBVar> pairVars;
 	map<pair<int, int>, GRBVar> refRAVars, tarRAVars;
 	map<pair<int, int>, GRBVar> refPAVars, tarPAVars;
+	map<pair<int, int>, GRBVar> pairVars;
+	GRBLinExpr cycleSum, indelSum;
 
 	// read files
 	readGenome(argv[1], argv[2], ref, tar, refFamilySize, tarFamilySize, maxFamily, refTeloIdx, tarTeloIdx);
@@ -256,8 +297,11 @@ int main(int argc, char *argv[]) {
 	adjConstr(ref, tar, refTeloIdx, tarTeloIdx, model, refRAVars, tarRAVars, refPAVars, tarPAVars);
 	cycleNodeConstr(ref, tar, model, refLabelVars, tarLabelVars, refCycleVars, tarCycleVars);
 	cycleEdgeConstr(ref, tar, model, refMatchVars, tarMatchVars, pairVars, refRAVars, tarRAVars, refPAVars, tarPAVars, refLabelVars, tarLabelVars);
-	objective(model, refCycleVars, tarCycleVars, refMatchVars, tarMatchVars);
+	objective(model, refCycleVars, tarCycleVars, refMatchVars, tarMatchVars, cycleSum, indelSum);
+
+	// output
 	outputJoins(out_dir+"/joins.txt", ref, tar, refPAVars, tarPAVars);
+	debug(ref, tar, refTeloIdx, tarTeloIdx, refMatchVars, tarMatchVars, pairVars, refPAVars, tarPAVars, refLabelVars, tarLabelVars, cycleSum, indelSum);
 
 	logFile.close();
 	return 0;

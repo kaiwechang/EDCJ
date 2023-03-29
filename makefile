@@ -10,7 +10,8 @@ GUROBI_FLAGS = -m64 -g $(LOCAL_LIB) -lgurobi_c++
 BIN_DIR = bin
 OUT_DIR = output
 #TEST_DIR = ../testcase/EI_test
-TEST_DIR = ../testcase/sim_smaller/sim1
+#TEST_DIR = ../testcase/sim_smaller/sim1
+TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/1
 #TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
 #TEST_DIR = ../testcase/sim_2000_50/sim_2000_30_5_200_10_50/2
 
@@ -25,6 +26,12 @@ $(BIN_DIR)/%: %.cpp
 	$(CXX) $(CXXFLAGS) $< -o $@ $(GUROBI_FLAGS)
 
 .SILENT:
+
+run_time: all
+	method=ilp;							\
+	time -f %e -o $(OUT_DIR)/time.txt		\
+	make run_$$method OUT_DIR=$(OUT_DIR)	\
+	TEST_DIR=$(TEST_DIR)
 
 run_ilp: all
 	$(BIN_DIR)/speedup_1E	$(TEST_DIR)/reference.all	$(TEST_DIR)/query.all		$(OUT_DIR)
