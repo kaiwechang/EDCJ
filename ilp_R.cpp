@@ -47,6 +47,7 @@ void GRBInit(GRBEnv*& env, GRBModel*& model, string out_dir) {
 	env->start();
 
 	model = new GRBModel(env);
+	//model->set("MIPGap", "0.005");
 }
 void matchConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int maxFamily, GRBModel* model, auto& refMatchVars, auto& tarMatchVars) {
 	// variables (Note: 0 for matched, 1 for unmatched)
@@ -101,14 +102,11 @@ void pairConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, 
 	for (int i = 0; i < tar.size(); i++)
 		model->addConstr(tarPairSums[i] == 1 - tarMatchVars[i]);
 }
-void adjConstr(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, GRBModel* model, auto& refRAVars, auto& tarRAVars, auto& refPAVars, auto& tarPAVars) {
-	// real adjacencies variables
-	for (int i = 0; i < ref.size()-1; i++)
-		if (ref[i].contig == ref[i+1].contig)
-			refRAVars[pair(2*i+1, 2*i+2)] = model->addVar(1, 1, 0, GRB_BINARY);
-	for (int i = 0; i < tar.size()-1; i++)
-		if (tar[i].contig == tar[i+1].contig)
-			tarRAVars[pair(2*i+1, 2*i+2)] = model->addVar(1, 1, 0, GRB_BINARY);
+void adjConstr(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, GRBModel* model, auto& refPAVars, auto& tarPAVars) {
+	// we don't need real adjacency and internal edge vars because:
+	// 1. labels around RAs can be directly set to the same value
+	// 2. internal edge vars are actually the same as matching vars
+	// => further, we don't even need pairing vars for singletons ?!
 
 	// potential adjacencies variables
 	for (int i = 0; i < refTeloIdx.size(); i++)
@@ -141,7 +139,7 @@ void cycleNodeConstr(auto& ref, auto& tar, GRBModel* model, auto& refLabelVars, 
 	for (int i = 0; i < 2*ref.size(); i++) {
 		GRBVar reach = model->addVar(0, 1, 0, GRB_BINARY);
 		GRBVar label = model->addVar(1, ++upper, 0, GRB_INTEGER);
-		//model->addConstr((1 - reach) <= upper - label);
+		model->addConstr((1 - reach) <= upper - label);
 		model->addConstr(reach * upper <= label);
 		refLabelVars.push_back(label);
 		refCycleVars.push_back(reach);
@@ -149,24 +147,28 @@ void cycleNodeConstr(auto& ref, auto& tar, GRBModel* model, auto& refLabelVars, 
 	for (int i = 0; i < 2*tar.size(); i++) {
 		GRBVar reach = model->addVar(0, 1, 0, GRB_BINARY);
 		GRBVar label = model->addVar(1, ++upper, 0, GRB_INTEGER);
-		//model->addConstr((1 - reach) <= upper - label);
+		model->addConstr((1 - reach) <= upper - label);
 		model->addConstr(reach * upper <= label);
 		tarLabelVars.push_back(label);
 		tarCycleVars.push_back(reach);
 	}
 }
-void cycleEdgeConstr(auto& ref, auto& tar, GRBModel* model, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refRAVars, auto& tarRAVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars) {
+void cycleEdgeConstr(auto& ref, auto& tar, GRBModel* model, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars) {
+	// RA constraints
+	for (int i = 0; i < ref.size()-1; i++)
+		if (ref[i].contig == ref[i+1].contig)
+			model->addConstr(refLabelVars[2*i+1] == refLabelVars[2*i+2]);
+	for (int i = 0; i < tar.size()-1; i++)
+		if (tar[i].contig == tar[i+1].contig)
+			model->addConstr(tarLabelVars[2*i+1] == tarLabelVars[2*i+2]);
+
+	// ref upper bound = idx + 1
+	// tar upper bound = ref.size() + idx + 1
 	auto cycleAdjConstr = [&](auto p, auto& v, auto& labelVars, int offset) {
 		auto& [i, j] = p;
 		model->addConstr(labelVars[i] <= labelVars[j] + (1 - v) * (offset+i+1));
 		model->addConstr(labelVars[j] <= labelVars[i] + (1 - v) * (offset+j+1));
 	};
-	// RA constraints
-	for (auto& [p, v]: refRAVars)	// ref upper bound = idx + 1
-		cycleAdjConstr(p, v, refLabelVars, 0);
-	for (auto& [p, v]: tarRAVars)	// tar upper bound = ref.size() + idx + 1
-		cycleAdjConstr(p, v, tarLabelVars, ref.size());
-
 	// PA constraints
 	for (auto& [p, v]: refPAVars)
 		cycleAdjConstr(p, v, refLabelVars, 0);
@@ -282,7 +284,6 @@ int main(int argc, char *argv[]) {
 	vector<GRBVar> refMatchVars, tarMatchVars;
 	vector<GRBVar> refLabelVars, tarLabelVars;
 	vector<GRBVar> refCycleVars, tarCycleVars;
-	map<pair<int, int>, GRBVar> refRAVars, tarRAVars;
 	map<pair<int, int>, GRBVar> refPAVars, tarPAVars;
 	map<pair<int, int>, GRBVar> pairVars;
 	GRBLinExpr cycleSum, indelSum;
@@ -294,9 +295,9 @@ int main(int argc, char *argv[]) {
 	GRBInit(env, model, out_dir);
 	matchConstr(ref, tar, refFamilySize, tarFamilySize, maxFamily, model, refMatchVars, tarMatchVars);
 	pairConstr(ref, tar, refFamilySize, tarFamilySize, model, pairVars, refMatchVars, tarMatchVars);
-	adjConstr(ref, tar, refTeloIdx, tarTeloIdx, model, refRAVars, tarRAVars, refPAVars, tarPAVars);
+	adjConstr(ref, tar, refTeloIdx, tarTeloIdx, model, refPAVars, tarPAVars);
 	cycleNodeConstr(ref, tar, model, refLabelVars, tarLabelVars, refCycleVars, tarCycleVars);
-	cycleEdgeConstr(ref, tar, model, refMatchVars, tarMatchVars, pairVars, refRAVars, tarRAVars, refPAVars, tarPAVars, refLabelVars, tarLabelVars);
+	cycleEdgeConstr(ref, tar, model, refMatchVars, tarMatchVars, pairVars, refPAVars, tarPAVars, refLabelVars, tarLabelVars);
 	objective(model, refCycleVars, tarCycleVars, refMatchVars, tarMatchVars, cycleSum, indelSum);
 
 	// output
