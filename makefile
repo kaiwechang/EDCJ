@@ -25,6 +25,10 @@ $(BIN_DIR)/%: %.cpp
 
 .SILENT:
 
+run_main: all
+	$(BIN_DIR)/main -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all	\
+					-m -i -e -x -p 16 -l 1800 -g 0.001 #-h
+
 run_time: all
 	method=ilp;							\
 	time -f %e -o $(OUT_DIR)/time.txt		\

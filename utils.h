@@ -42,6 +42,11 @@ template<typename... Args>
 void logging(std::string_view fstr, Args... args) {
 	logFile << fmt::vformat(fstr, fmt::make_format_args(std::forward<Args>(args)...));
 }
+template<typename... Args>
+void error(std::string_view fstr, Args... args) {
+	print("[error] {}", fmt::vformat(fstr, fmt::make_format_args(std::forward<Args>(args)...)));
+	exit(1);
+}
 struct Telos {
 	// a telo is stored as its signed id ((+) for head, (-) for tail)
 	int lhs, rhs;	// telo on the left/right hand side of a contig
@@ -70,5 +75,6 @@ struct Marker {
 		logging("Marker({}, {}, {})\n", this->id, this->family, this->contig);
 	}
 };
+enum Mode { MMDCJ, IDCJ, EDCJ };
 
 #endif	// DCJ_SCAFFOLDER_UTILS_H_
