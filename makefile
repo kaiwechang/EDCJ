@@ -1,18 +1,16 @@
 CC = gcc
 CXX = g++
 CFLAGS = -O3 -lm
-CXXFLAGS = $(CFLAGS) -std=c++2a -lfmt -fconcepts
-
-LOCAL_LIB = -lgurobi100
-SERVER_LIB = -I$(HOME)/gurobi952/linux64/include -L$(HOME)/gurobi952/linux64/lib -lgurobi95
-GUROBI_FLAGS = -m64 -g $(LOCAL_LIB) -lgurobi_c++
+CXXFLAGS = $(CFLAGS) -std=c++20 -lfmt
+MAKEFLAGS = -j $$(nproc --all)
+GUROBI_FLAGS = -m64 -g -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib -lgurobi_c++ -lgurobi100
 
 BIN_DIR = bin
 OUT_DIR = output
 #TEST_DIR = ../testcase/EI_test
 #TEST_DIR = ../testcase/sim_smaller/sim1
-TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/1
-#TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
+#TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/1
+TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
 #TEST_DIR = ../testcase/sim_2000_50/sim_2000_30_5_200_10_50/2
 
 TARGETS = $(patsubst %.cpp, %, $(shell ls *.cpp))
@@ -23,12 +21,12 @@ all: mkdir $(addprefix $(BIN_DIR)/, $(TARGETS))
 mkdir:
 	@mkdir -p $(BIN_DIR) $(OUT_DIR)
 $(BIN_DIR)/%: %.cpp
-	$(CXX) $(CXXFLAGS) $< -o $@ $(GUROBI_FLAGS)
+	$(CXX) $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
 
 .SILENT:
 
 run_time: all
-	method=cycle;							\
+	method=ilp;							\
 	time -f %e -o $(OUT_DIR)/time.txt		\
 	make run_$$method OUT_DIR=$(OUT_DIR)	\
 	TEST_DIR=$(TEST_DIR)
@@ -79,7 +77,7 @@ run_EBD: mkdir
 	./misJoin_eval.php		$(TEST_DIR)/answerToAll		$(OUT_DIR)/result/ScaffoldResult		> $(OUT_DIR)/evaulate.txt
 
 experiment: all
-	$(eval test_base="../testcase/sim_2000_100")
+	$(eval test_base="../testcase/sim_3000")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
@@ -95,11 +93,11 @@ experiment: all
 	./print_table $(out_base)
 
 gen_test: all
-	$(eval ori_mkr=2000)
+	$(eval ori_mkr=3000)
 	$(eval dup_len=5)
-	$(eval evo_num=200)
-	$(eval ref_num=10)
-	$(eval tar_num=50)
+	$(eval evo_num=300)
+	$(eval ref_num=1)
+	$(eval tar_num=150)
 	$(eval test_base="testcase/")
 	# <# initial markers> <inverse rate> <duplicate length> <# evolutions> <# ref contigs> <# tar contigs> <output_dir>
 	for inv in 10 20 30 40 50 60 70 80 90 100; do	\
