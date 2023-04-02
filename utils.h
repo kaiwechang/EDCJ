@@ -20,22 +20,23 @@ using std::vector;
 using std::map;
 using std::set;
 
-ofstream logFile;
+extern ofstream logFile;
+enum Mode { MMDCJ, IDCJ, EDCJ };
 
-int abs(int a) {
+inline int abs(int a) {
 	return a > 0 ? a : -a ;
 }
-int max(int a, int b) {
+inline int max(int a, int b) {
 	return a > b ? a : b ;
 }
-int min(int a, int b) {
+inline int min(int a, int b) {
 	return a < b ? a : b ;
 }
-int sign(int a) {
+inline int sign(int a) {
 	return (a > 0) - (a < 0);
 }
 // telos (signed id) to index
-int idx(int t) {
+inline int idx(int t) {
 	return abs(t)-1;
 }
 template<typename... Args>
@@ -75,6 +76,14 @@ struct Marker {
 		logging("Marker({}, {}, {})\n", this->id, this->family, this->contig);
 	}
 };
-enum Mode { MMDCJ, IDCJ, EDCJ };
+
+// functions
+int speedup_1	(string, string, string);
+int speedup_1E	(string, string, string);
+int speedup_3E	(string, string, string, bool);
+int speedup_3ER	(string, string, string, bool);
+int ilp_old		(string, string, string, Mode, int, int, int);
+int ilp_new		(string, string, string, Mode, int, int, int);
+int postprocess	(string, string, string);
 
 #endif	// DCJ_SCAFFOLDER_UTILS_H_

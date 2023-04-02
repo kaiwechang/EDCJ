@@ -3,7 +3,7 @@
 using std::pair;
 using std::make_pair;
 
-void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& tarOrder) {
+static void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& tarOrder) {
 	string contig;
 	int id, family, tmp;
 	ifstream fin(refFile);
@@ -23,7 +23,7 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& tarO
 			tarOrder.push_back(tar[i+1].contig);
 	}
 }
-void readJoins(string filename, auto& tar, auto& tarTelos) {
+static void readJoins(string filename, auto& tar, auto& tarTelos) {
 	// construct tarTelos
 	for (int i = 0; i < tar.size(); i++) {
 		if (i == 0 || tar[i-1].contig != tar[i].contig)
@@ -45,7 +45,7 @@ void readJoins(string filename, auto& tar, auto& tarTelos) {
 		logging("{}, l: ({}, {}), r: ({}, {})\n", p.first,
 			p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
 }
-void readMergeContigs(string filename, auto& tar, auto& mergeContig) {
+static void readMergeContigs(string filename, auto& tar, auto& mergeContig) {
 	int tmp;
 	string key, contig;
 	ifstream fin(filename);
@@ -78,7 +78,7 @@ void readMergeContigs(string filename, auto& tar, auto& mergeContig) {
 		}
 	}*/
 }
-void scaffolding(auto& tar, auto& tarTelos, auto& tarOrder, auto& scaffolds) {
+static void scaffolding(auto& tar, auto& tarTelos, auto& tarOrder, auto& scaffolds) {
 	map<string, bool> visited;
 	for (Marker& m: tar)
 		visited[m.contig] = false;
@@ -108,7 +108,7 @@ void scaffolding(auto& tar, auto& tarTelos, auto& tarOrder, auto& scaffolds) {
 		}	scaffolds.push_back(curScaffold);
 	}
 }
-void addReducedContigs(string filename, auto& scaffolds) {
+static void addReducedContigs(string filename, auto& scaffolds) {
 	string contig;
 	int id, family, tmp;
 	ifstream fin(filename);
@@ -116,7 +116,7 @@ void addReducedContigs(string filename, auto& scaffolds) {
 		scaffolds.push_back(vector<pair<string, int>>(1, make_pair(contig, 0)));
 	}	fin.close();
 }
-void outputScaffold(string filename, auto& scaffolds, auto& mergeContig) {
+static void outputScaffold(string filename, auto& scaffolds, auto& mergeContig) {
 	auto mergeContigSign = [&](string target, auto merged) {
 		// find target(leader) contig in the merged contigs
 		// and then return its sign
@@ -147,12 +147,8 @@ void outputScaffold(string filename, auto& scaffolds, auto& mergeContig) {
 		}	fout << "\n";
 	}	fout.close();
 }
-int main(int argc, char *argv[]) {
-	if (argc < 4) {
-		fmt::print("[error] Usage:\n>>> postprocess <tar genome> <joins.txt> <output_dir>\n");
-		return 0;
-	}	string out_dir(argv[3]);
-	logFile.open(out_dir+"/postprocess.log");
+int postprocess(string refPath, string tarPath, string outDir) {
+	logFile.open(outDir+"/postprocess.log");
 
 	vector<Marker> ref, tar;
 	vector<string> tarOrder;
@@ -162,16 +158,16 @@ int main(int argc, char *argv[]) {
 	map<string, vector<pair<string, int>>> mergeContig;
 
 	// read files
-	readGenome(argv[1], argv[2], ref, tar, tarOrder);
-	readJoins(out_dir+"/joins.txt", tar, tarTelos);
-	readMergeContigs(out_dir+"/tar_merge.txt", tar, mergeContig);
+	readGenome(refPath, tarPath, ref, tar, tarOrder);
+	readJoins(outDir+"/joins.txt", tar, tarTelos);
+	readMergeContigs(outDir+"/tar_merge.txt", tar, mergeContig);
 
 	// scaffolding
 	scaffolding(tar, tarTelos, tarOrder, scaffolds);
-	addReducedContigs(out_dir+"/removed_spd1.txt", scaffolds);
+	addReducedContigs(outDir+"/removed_spd1.txt", scaffolds);
 
 	// output final scaffold
-	outputScaffold(out_dir+"/scaffolds.txt", scaffolds, mergeContig);
+	outputScaffold(outDir+"/scaffolds.txt", scaffolds, mergeContig);
 
 	logFile.close();
 	return 0;

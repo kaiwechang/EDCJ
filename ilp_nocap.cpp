@@ -1,11 +1,7 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
 #include <algorithm>
-#include <set>
-#include <map>
-#include "string.h"
 #include "gurobi_c++.h"
+#include "utils.h"
 
 #define pb push_back
 #define capFamily 999999
@@ -28,7 +24,7 @@ struct Edge
 		cout << "Edge(" << is_potential << "," << node1 << "," << node2 << "," << etype << ")" << endl;
 	}
 };
-struct Marker
+/*struct Marker
 {
 	int id, family;
 	string contig;
@@ -42,7 +38,7 @@ struct Marker
 	{
 		cout << "Marker(" << id << "," << family << "," << contig << ")" << endl;
 	}
-};
+};*/
 struct Node
 {
 	int nodeid, markerid;
@@ -970,13 +966,14 @@ void findMax(GRBModel &model)
 
 void showResult()
 {
-	int cycles = 0;
-	for (int i = 0; i < cycleVars.size(); i++)
-		if (cycleVars[i].get(GRB_DoubleAttr_X) == 1)
-			cycles++;
-	cout << "Cycles: " << cycles << endl;
 	if (isdebug)
 	{
+		int cycles = 0;
+		for (int i = 0; i < cycleVars.size(); i++)
+			if (cycleVars[i].get(GRB_DoubleAttr_X) == 1)
+				cycles++;
+		cout << "Cycles: " << cycles << endl;
+
 		for (int i = 0; i < markerVars.size(); i++)
 		{
 			cout << "marker " << (i < refMarkerSize ? refMarkers[i].family : tarMarkers[i-refMarkerSize].family) << ": " << markerVars[i].get(GRB_DoubleAttr_X) << endl;
@@ -1033,8 +1030,10 @@ void showResult()
 	// cout << "refContigNum: " << refContigNum << endl;
 	//cout<<"----------------------node---------------------"<<endl;
 }
-void showVars()
+void showVars(bool debug)
 {
+	if (!debug)
+		return;
 	cout << "markerVar size: " << markerVars.size() << endl;
 	cout << "homoVar size: " << homoVars.size() << endl;
 	cout << "cycleVar size: " << cycleVars.size() << endl;
@@ -1120,18 +1119,18 @@ void graphDebug(bool debug)
 		printf(" %5d %5d | %3d %4d |\n", temp.node1, temp.node2, temp.is_potential, (int)adjVars[i].get(GRB_DoubleAttr_X));
 	}
 }
-int main(int argc, char *argv[])
+int ilp_old(string refPath, string tarPath, string outDir, Mode mode, int gap, int procs, int timelimit)
 {
-	out_dir = string(argc < 4 ? "output" : argv[3]);
+	out_dir = outDir;
 	try
 	{
 		GRBEnv env = GRBEnv(true);
 		env.set("LogToConsole", "0");
-		env.set("LogFile", out_dir+"/gurobi.log");
+		env.set("LogFile", outDir+"/gurobi.log");
 		env.start();
 		GRBModel model = GRBModel(env);
 		//model.set("TimeLimit","120");
-		getInput(argv[1], argv[2]);
+		getInput(refPath, tarPath);
 		addDuplicatedVar(model);	//todo: no need to determine singletons
 		addMemberConstraint(model); //1.same gene content 2.at least one in each fam
 		if (isdebug)
@@ -1151,7 +1150,7 @@ int main(int argc, char *argv[])
 		if (isdebug)
 			cout << "p3" << endl;
 		showDebugInfo(isdebug);
-		showVars();
+		showVars(false);
 		// cout << "refRealAdjNumc2c: " << refRealAdjNumc2c << endl;
 		// cout << "refPotentialAdjNumt2t: " << refPotAdjNumt2t << endl;
 		// cout << "refPotentialAdjNumt2c: " << refPotAdjNumt2c << endl;
@@ -1162,7 +1161,7 @@ int main(int argc, char *argv[])
 		// cout << "tarPotentialAdjNumc2c: " << tarPotAdjNumc2c << endl;
 		findMax(model);
 		showResult();
-		graphDebug(true);
+		graphDebug(false);
 	}
 	catch (GRBException e)
 	{

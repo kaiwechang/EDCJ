@@ -5,7 +5,7 @@ using std::pair;
 using std::deque;
 using std::make_pair;
 
-void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTelos, auto& tarTelos, auto& refOrder, auto& tarOrder) {
+static void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTelos, auto& tarTelos, auto& refOrder, auto& tarOrder) {
 	string contig;
 	int id, family, tmp;
 
@@ -61,7 +61,7 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refF
 			tarOrder.push_back(tar[i+1].contig);
 	}
 }
-void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, auto& refTelos, auto& tarTelos, bool extended) {
+static void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, auto& refTelos, auto& tarTelos, bool extended) {
 	auto concat = [&](auto& solid, int i, int f1, int f2, int hs1, int hs2, int& js1, int& js2) {
 		if (extended &&
 			// at least one singleton
@@ -113,7 +113,7 @@ void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, aut
 	for (auto& p: tarTelos)
 		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
 }
-auto joinGenome(auto& genome, auto& contig2telos, auto& draft, auto& genomeOrder) {
+static auto joinGenome(auto& genome, auto& contig2telos, auto& draft, auto& genomeOrder) {
 	map<string, bool> visited;
 	auto travse = [&](auto& curScaffold, Telos tp, bool right) {
 		int hs = right ? tp.rhs : tp.lhs ;
@@ -173,7 +173,7 @@ auto joinGenome(auto& genome, auto& contig2telos, auto& draft, auto& genomeOrder
 	logging("{} contigs in draft\n", draft.size());
 	return newGenome;
 }
-void outputMergeContigs(string filename, auto& draft) {
+static void outputMergeContigs(string filename, auto& draft) {
 	ofstream fout(filename);
 	for (auto& sv: draft)
 		if (sv.size() > 1) {
@@ -183,7 +183,7 @@ void outputMergeContigs(string filename, auto& draft) {
 			fout <<  format("end\n");
 		}
 }
-void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& reorder) {
+static void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& reorder) {
 	ofstream fout(refFile);
 	for (Marker& m: ref) {
 		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
@@ -193,12 +193,8 @@ void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto&
 		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
 	}	fout.close();
 }
-int main(int argc, char *argv[]) {
-	if (argc < 4) {
-		fmt::print("[error] Usage:\n>>> speedup_1 <ref genome> <tar genome> <output_dir>\n");
-		return 0;
-	}	string out_dir(argv[3]);
-	logFile.open(out_dir+"/speedup_3.log");
+int speedup_3ER(string refPath, string tarPath, string outDir, bool extended) {
+	logFile.open(outDir+"/speedup_3.log");
 
 	int maxFamily = 0;
 	vector<Marker> ref, tar;
@@ -208,19 +204,18 @@ int main(int argc, char *argv[]) {
 	map<string, Telos> refTelos, tarTelos;
 
 	// read ref/tar
-	readGenome(argv[1], argv[2], ref, tar, refFamilySize, tarFamilySize, maxFamily,
+	readGenome(refPath, tarPath, ref, tar, refFamilySize, tarFamilySize, maxFamily,
 								 refTelos, tarTelos, refOrder, tarOrder);
 
 	// speedup 1
-	bool extended = argc == 4 ? false : true ;
 	speedup(ref, tar, refFamilySize, tarFamilySize, refTelos, tarTelos, extended);
 	ref = joinGenome(ref, refTelos, refDraft, refOrder);
 	tar = joinGenome(tar, tarTelos, tarDraft, tarOrder);
 
 	// output new ref/tar & mergeContigs
-	outputNewGenome(out_dir+"/ref_spd3.all", out_dir+"/tar_spd3.all", ref, tar, reorder);
-	outputMergeContigs(out_dir+"/ref_merge.txt", refDraft);
-	outputMergeContigs(out_dir+"/tar_merge.txt", tarDraft);
+	outputNewGenome(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", ref, tar, reorder);
+	outputMergeContigs(outDir+"/ref_merge.txt", refDraft);
+	outputMergeContigs(outDir+"/tar_merge.txt", tarDraft);
 
 	logFile.close();
 	return 0;

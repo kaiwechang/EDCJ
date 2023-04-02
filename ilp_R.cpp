@@ -3,7 +3,7 @@
 #include <utility>
 using std::pair;
 
-void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTeloIdx, auto& tarTeloIdx) {
+static void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily, auto& refTeloIdx, auto& tarTeloIdx) {
 	string contig;
 	int id, family, tmp;
 	ifstream fin(refFile);
@@ -39,17 +39,17 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& refF
 			tarTeloIdx.push_back(2*i+1);
 	}
 }
-void GRBInit(GRBEnv*& env, GRBModel*& model, string out_dir) {
+static void GRBInit(GRBEnv*& env, GRBModel*& model, string outDir) {
 	env = new GRBEnv(true);
 	env->set("LogToConsole", "0");
-	env->set("LogFile", out_dir+"/gurobi.log");
+	env->set("LogFile", outDir+"/gurobi.log");
 	env->set("TimeLimit", "1800");
 	env->start();
 
 	model = new GRBModel(env);
 	//model->set("MIPGap", "0.005");
 }
-void matchConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int maxFamily, GRBModel* model, auto& refMatchVars, auto& tarMatchVars) {
+static void matchConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int maxFamily, GRBModel* model, auto& refMatchVars, auto& tarMatchVars, Mode mode) {
 	// variables (Note: 0 for matched, 1 for unmatched)
 	for (Marker& m: ref)
 		refMatchVars.push_back(
@@ -71,12 +71,14 @@ void matchConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize,
 	for (int f = 1; f <= maxFamily; f++) {
 		// same gene content
 		model->addConstr(refMatchSums[f] == tarMatchSums[f]);
-		//model->addConstr(refMatchSums[f] == min(refFamilySize[f], tarFamilySize[f]));	// maximum matching
-		//model->addConstr(refMatchSums[f] >= 1);										// intermediate
-		model->addConstr(refMatchSums[f] == 1);											// exemplar
+		switch(mode) {
+			case MMDCJ:	model->addConstr(refMatchSums[f] == min(refFamilySize[f], tarFamilySize[f])); break;
+			case IDCJ:	model->addConstr(refMatchSums[f] >= 1);	break;
+			case EDCJ:	model->addConstr(refMatchSums[f] == 1);	break;
+		}
 	}
 }
-void pairConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, GRBModel* model, auto& pairVars, auto& refMatchVars, auto& tarMatchVars) {
+static void pairConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, GRBModel* model, auto& pairVars, auto& refMatchVars, auto& tarMatchVars) {
 	// variables
 	for (int i = 0; i < ref.size(); i++)
 		for (int j = 0; j < tar.size(); j++) {
@@ -95,14 +97,13 @@ void pairConstr(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, 
 		auto& [i, j] = mp.first;
 		refPairSums[i] += mp.second;
 		tarPairSums[j] += mp.second;
-		//fmt::print("({}, {}): {}\n", i, j, 9);
 	}
 	for (int i = 0; i < ref.size(); i++)
 		model->addConstr(refPairSums[i] == 1 - refMatchVars[i]);
 	for (int i = 0; i < tar.size(); i++)
 		model->addConstr(tarPairSums[i] == 1 - tarMatchVars[i]);
 }
-void adjConstr(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, GRBModel* model, auto& refPAVars, auto& tarPAVars) {
+static void adjConstr(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, GRBModel* model, auto& refPAVars, auto& tarPAVars) {
 	// we don't need real adjacency and internal edge vars because:
 	// 1. labels around RAs can be directly set to the same value
 	// 2. internal edge vars are actually the same as matching vars
@@ -133,7 +134,7 @@ void adjConstr(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, GRBMode
 	for (auto& [t, v]: tarPASums)
 		model->addConstr(tarPASums[t] == 1);
 }
-void cycleNodeConstr(auto& ref, auto& tar, GRBModel* model, auto& refLabelVars, auto& tarLabelVars, auto& refCycleVars, auto& tarCycleVars) {
+static void cycleNodeConstr(auto& ref, auto& tar, GRBModel* model, auto& refLabelVars, auto& tarLabelVars, auto& refCycleVars, auto& tarCycleVars) {
 	// label/cycle variables & upper bound constraints
 	int upper = 0;
 	for (int i = 0; i < 2*ref.size(); i++) {
@@ -153,7 +154,7 @@ void cycleNodeConstr(auto& ref, auto& tar, GRBModel* model, auto& refLabelVars, 
 		tarCycleVars.push_back(reach);
 	}
 }
-void cycleEdgeConstr(auto& ref, auto& tar, GRBModel* model, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars) {
+static void cycleEdgeConstr(auto& ref, auto& tar, GRBModel* model, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars) {
 	// RA constraints
 	for (int i = 0; i < ref.size()-1; i++)
 		if (ref[i].contig == ref[i+1].contig)
@@ -197,7 +198,7 @@ void cycleEdgeConstr(auto& ref, auto& tar, GRBModel* model, auto& refMatchVars, 
 		}
 	}
 }
-void objective(GRBModel* model, auto& refCycleVars, auto& tarCycleVars, auto& refMatchVars, auto& tarMatchVars, auto& cycleSum, auto& indelSum) {
+static void objective(GRBModel* model, auto& refCycleVars, auto& tarCycleVars, auto& refMatchVars, auto& tarMatchVars, auto& cycleSum, auto& indelSum) {
 	for (auto& v: refCycleVars)	cycleSum += v;
 	for (auto& v: tarCycleVars)	cycleSum += v;
 
@@ -209,7 +210,7 @@ void objective(GRBModel* model, auto& refCycleVars, auto& tarCycleVars, auto& re
 	model->update();
 	model->optimize();
 }
-void outputJoins(string filename, auto& ref, auto& tar, auto& refPAVars, auto& tarPAVars) {
+static void outputJoins(string filename, auto& ref, auto& tar, auto& refPAVars, auto& tarPAVars) {
 	auto i2t = [](auto& genome, int i) {
 		int f = genome[int(i/2)].family;
 		int id = genome[int(i/2)].id;
@@ -223,7 +224,7 @@ void outputJoins(string filename, auto& ref, auto& tar, auto& refPAVars, auto& t
 			fout << format("marker {} {}\n", i2t(tar, i), i2t(tar, j));
 	}	fout.close();
 }
-void debug(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars, auto& cycleSum, auto& indelSum) {
+static void debug(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, auto& refMatchVars, auto& tarMatchVars, auto& pairVars, auto& refPAVars, auto& tarPAVars, auto& refLabelVars, auto& tarLabelVars, auto& cycleSum, auto& indelSum) {
 	logging("basic infos:\n");
 	logging("-------+-------+-------+\n");
 	logging("   num |   ref |   tar |\n");
@@ -265,14 +266,9 @@ void debug(auto& ref, auto& tar, auto& refTeloIdx, auto& tarTeloIdx, auto& refMa
 		logging("| {:3d} {:3d} | {:3d} |\n", p.first, p.second, (int)v.get(GRB_DoubleAttr_X));
 	logging("+---------+-----+\n");
 }
-int main(int argc, char *argv[]) {
-	if (argc < 4) {
-		fmt::print("[error] Usage:\n>>> ilp <ref genome> <tar genome> <output_dir>\n");
-		return 0;
-	}	string out_dir(argv[3]);
-	logFile.open(out_dir+"/ilp.log");
+int ilp_new(string refPath, string tarPath, string outDir, Mode mode, int gap, int procs, int timelimit) {
+	logFile.open(outDir+"/ilp.log");
 
-	// 
 	int maxFamily = 0;
 	vector<Marker> ref, tar;
 	vector<int> refTeloIdx, tarTeloIdx;
@@ -289,11 +285,11 @@ int main(int argc, char *argv[]) {
 	GRBLinExpr cycleSum, indelSum;
 
 	// read files
-	readGenome(argv[1], argv[2], ref, tar, refFamilySize, tarFamilySize, maxFamily, refTeloIdx, tarTeloIdx);
+	readGenome(refPath, tarPath, ref, tar, refFamilySize, tarFamilySize, maxFamily, refTeloIdx, tarTeloIdx);
 
 	// ILP
-	GRBInit(env, model, out_dir);
-	matchConstr(ref, tar, refFamilySize, tarFamilySize, maxFamily, model, refMatchVars, tarMatchVars);
+	GRBInit(env, model, outDir);
+	matchConstr(ref, tar, refFamilySize, tarFamilySize, maxFamily, model, refMatchVars, tarMatchVars, mode);
 	pairConstr(ref, tar, refFamilySize, tarFamilySize, model, pairVars, refMatchVars, tarMatchVars);
 	adjConstr(ref, tar, refTeloIdx, tarTeloIdx, model, refPAVars, tarPAVars);
 	cycleNodeConstr(ref, tar, model, refLabelVars, tarLabelVars, refCycleVars, tarCycleVars);
@@ -301,7 +297,7 @@ int main(int argc, char *argv[]) {
 	objective(model, refCycleVars, tarCycleVars, refMatchVars, tarMatchVars, cycleSum, indelSum);
 
 	// output
-	outputJoins(out_dir+"/joins.txt", ref, tar, refPAVars, tarPAVars);
+	outputJoins(outDir+"/joins.txt", ref, tar, refPAVars, tarPAVars);
 	debug(ref, tar, refTeloIdx, tarTeloIdx, refMatchVars, tarMatchVars, pairVars, refPAVars, tarPAVars, refLabelVars, tarLabelVars, cycleSum, indelSum);
 
 	logFile.close();

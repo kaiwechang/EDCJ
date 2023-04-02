@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& contigSize, auto& refFamilySize, auto& tarFamilySize, int& maxFamily) {
+static void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& contigSize, auto& refFamilySize, auto& tarFamilySize, int& maxFamily) {
 	string contig;
 	int id, family, tmp;
 
@@ -24,7 +24,7 @@ void readGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& cont
 	for (Marker& m: tar)
 		tarFamilySize[m.absFamily]++;
 }
-void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily) {
+static void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int& maxFamily) {
 	bool done = false;
 	auto rename = [&](int i, int j, int idx, int jdx, int reversed) {
 		if (// check index in range
@@ -85,7 +85,7 @@ void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySize, int
 			logging("loop\n");
 	}
 }
-void markerReorder(auto& ref, auto& tarFamilySize, int maxFamily, auto& reorder) {
+static void markerReorder(auto& ref, auto& tarFamilySize, int maxFamily, auto& reorder) {
 	logging("maxFamily: {}\n", maxFamily);
 	set<int> refFamily, tarFamily;
 	reorder.assign(maxFamily+1, 0);
@@ -96,7 +96,7 @@ void markerReorder(auto& ref, auto& tarFamilySize, int maxFamily, auto& reorder)
 	for (int f: refFamily)
 		reorder[f] = uid++;
 }
-void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& reorder) {
+static void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto& reorder) {
 	int uid = 1;
 	ofstream fout(refFile);
 	for (Marker& m: ref) {
@@ -112,7 +112,7 @@ void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar, auto&
 				(m.family > 0 ? 1 : -1)*reorder[m.absFamily], m.contig);
 	}	fout.close();
 }
-void outputReducedContigs(string filename, auto& tar, auto& contigSize, auto& refFamilySize) {
+static void outputReducedContigs(string filename, auto& tar, auto& contigSize, auto& refFamilySize) {
 	ofstream fout(filename);
 	logging("contigSize:\n");
 	for (Marker& m: tar)
@@ -124,12 +124,8 @@ void outputReducedContigs(string filename, auto& tar, auto& contigSize, auto& re
 		logging("{}: {}\n", p.first, p.second);
 	}	fout.close();
 }
-int main(int argc, char *argv[]) {
-	if (argc < 4) {
-		fmt::print("[error] Usage:\n>>> speedup_1 <ref genome> <tar genome> <output_dir>\n");
-		return 0;
-	}	string out_dir(argv[3]);
-	logFile.open(out_dir+"/speedup_1.log");
+int speedup_1(string refPath, string tarPath, string outDir) {
+	logFile.open(outDir+"/speedup_1.log");
 
 	int maxFamily = 0;
 	vector<Marker> ref, tar;
@@ -137,15 +133,15 @@ int main(int argc, char *argv[]) {
 	map<string, int> contigSize;
 
 	// read ref/tar
-	readGenome(argv[1], argv[2], ref, tar, contigSize, refFamilySize, tarFamilySize, maxFamily);
+	readGenome(refPath, tarPath, ref, tar, contigSize, refFamilySize, tarFamilySize, maxFamily);
 
 	// speedup 1
 	speedup(ref, tar, refFamilySize, tarFamilySize, maxFamily);
 	markerReorder(ref, tarFamilySize, maxFamily, reorder);
 
 	// output new ref/tar
-	outputNewGenome(out_dir+"/ref_spd1.all", out_dir+"/tar_spd1.all", ref, tar, reorder);
-	outputReducedContigs(out_dir+"/removed_spd1.txt", tar, contigSize, refFamilySize);
+	outputNewGenome(outDir+"/ref_spd1.all", outDir+"/tar_spd1.all", ref, tar, reorder);
+	outputReducedContigs(outDir+"/removed_spd1.txt", tar, contigSize, refFamilySize);
 
 	logFile.close();
 	return 0;
