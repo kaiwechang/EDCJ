@@ -59,7 +59,7 @@ run_time: all
 	TEST_DIR=$(TEST_DIR)
 
 experiment: all
-	$(eval test_base="../testcase/sim_1000/simdata1")
+	$(eval test_base="../testcase/real_test")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
@@ -74,19 +74,38 @@ experiment: all
 	done
 	$(TOOL_DIR)/print_table $(out_base)
 
-gen_test:
+gen_real:
+	$(eval test_base="../../testcase/real_data")
+	cd $(TOOL_DIR);										\
+	gcc -w fna2all.c -o fna2all;						\
+	for organ in $$(ls $(test_base)); do				\
+		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
+		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
+		for dir in $$(ls $(test_base)/$$organ); do		\
+			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
+				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);			\
+				mkdir -p testcase/$$organ/$$dir;						\
+				./fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
+				cp $$ans testcase/$$organ/$$dir/;						\
+				mv testcase/$$organ/$$dir/sibelia/reference.all testcase/$$organ/$$dir/reference.all;	\
+				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/query.all;		\
+				rm -r testcase/$$organ/$$dir/sibelia;	\
+			fi;											\
+		done;											\
+	done
+
+gen_sim:
 	$(eval ori_mkr=3000)
 	$(eval dup_len=5)
 	$(eval evo_num=300)
 	$(eval ref_num=1)
 	$(eval tar_num=150)
-	$(eval test_base="testcase/")
 	# <# initial markers> <inverse rate> <duplicate length> <# evolutions> <# ref contigs> <# tar contigs> <output_dir>
 	cd $(TOOL_DIR);									\
 	g++ simulator.cpp -o simulator;					\
 	for inv in 10 20 30 40 50 60 70 80 90 100; do	\
 		for sub in 1 2 3 4 5; do					\
-			test_dir=$(test_base)/sim_$(ori_mkr)_$${inv}_$(dup_len)_$(evo_num)_$(ref_num)_$(tar_num)/$$sub;	\
+			test_dir=testcase/sim_$(ori_mkr)_$${inv}_$(dup_len)_$(evo_num)_$(ref_num)_$(tar_num)/$$sub;	\
 			mkdir -p $$test_dir;					\
 			./simulator $(ori_mkr) $${inv} $(dup_len) $(evo_num) $(ref_num) $(tar_num)	$$test_dir;	\
 			rm $$test_dir/*_process;				\
