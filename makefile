@@ -37,8 +37,8 @@ run_ilp: all
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_hack: all
-	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR) -ea
+run_spd3E: all
+	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR) -x
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
@@ -59,11 +59,11 @@ run_time: all
 	TEST_DIR=$(TEST_DIR)
 
 experiment: all
-	$(eval test_base="../testcase/real_test")
+	$(eval test_base="../testcase/sim_2000_100")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
-			for method in EBD main; do					\
+			for method in EBD main spd3E; do				\
 				tar_dir=$(out_base)/$$dir/$$sub/$$method;	\
 				mkdir -p $$tar_dir;							\
 				time -f %e -o $$tar_dir/time.txt			\

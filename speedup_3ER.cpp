@@ -40,13 +40,6 @@ static void readGenome(string refFile, string tarFile, auto& ref, auto& tar, aut
 	storeTelos(ref, refTelos);
 	storeTelos(tar, tarTelos);
 
-	logging("refTelos:\n");
-	for (auto& p: refTelos)
-		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
-	logging("tarTelos:\n");
-	for (auto& p: tarTelos)
-		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
-
 	// contig order
 	for (int i = 0; i < ref.size()-1; i++) {
 		if (i == 0)
@@ -74,7 +67,7 @@ static void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySi
 			  refFamilySize[solid[i+1].absFamily] == 1 && tarFamilySize[solid[i+1].absFamily] == 1))
 			return;
 		if (// not joined yet
-			//js1 == 0 && js2 == 0 &&
+			js1 == 0 && js2 == 0 &&
 			// solid ?
 			solid[i].contig == solid[i+1].contig &&
 			// adjacency ?
@@ -85,8 +78,8 @@ static void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySi
 	};
 	auto iterTelos = [&](auto& g1, auto& g2, auto& contig2telos) {
 		for (int i = 0; i < g1.size()-1; i++)
-			for (auto it1 = tarTelos.begin(); std::next(it1, 1) != tarTelos.end(); it1++)
-				for (auto it2 = std::next(it1, 1); it2 != tarTelos.end(); it2++) {
+			for (auto it1 = contig2telos.begin(); std::next(it1, 1) != contig2telos.end(); it1++)
+				for (auto it2 = std::next(it1, 1); it2 != contig2telos.end(); it2++) {
 					auto& [c1, tp1] = *it1;
 					auto& [c2, tp2] = *it2;
 					if (c1 == c2)
@@ -107,11 +100,11 @@ static void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySi
 
 	logging("spd3:\n");
 	logging("refTelos:\n");
-	for (auto& p: refTelos)
-		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
+	for (auto& [c, tp]: refTelos)
+		logging("  {}, l: ({}, {}) [{}], r: ({}, {}) [{}]\n", c, tp.lhs, tp.ljs, refFamilySize[ref[idx(tp.lhs)].absFamily], tp.rhs, tp.rjs, refFamilySize[ref[idx(tp.rhs)].absFamily]);
 	logging("tarTelos:\n");
-	for (auto& p: tarTelos)
-		logging("  {}, l: ({}, {}), r: ({}, {})\n", p.first, p.second.lhs, p.second.ljs, p.second.rhs, p.second.rjs);
+	for (auto& [c, tp]: tarTelos)
+		logging("  {}, l: ({}, {}), [{}], r: ({}, {}), [{}]\n", c, tp.lhs, tp.ljs, tarFamilySize[tar[idx(tp.lhs)].absFamily], tp.rhs, tp.rjs, tarFamilySize[tar[idx(tp.rhs)].absFamily]);
 }
 static auto joinGenome(auto& genome, auto& contig2telos, auto& draft, auto& genomeOrder) {
 	map<string, bool> visited;
@@ -136,14 +129,14 @@ static auto joinGenome(auto& genome, auto& contig2telos, auto& draft, auto& geno
 	};
 	for (Marker& m: genome)
 		visited[m.contig] = false;
-	for (auto& [c, v]: visited) {
+	for (string& str: genomeOrder) {
 		deque<pair<string, int>> curScaffold;
-		if (v)
+		if (visited[str])
 			continue;
-		Telos tp = contig2telos[c];
+		Telos tp = contig2telos[str];
 
-		curScaffold.push_back(make_pair(c, 0));
-		v = true;
+		curScaffold.push_back(make_pair(str, 0));
+		visited[str] = true;
 
 		travse(curScaffold, tp, true);
 		travse(curScaffold, tp, false);
