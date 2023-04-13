@@ -4,7 +4,6 @@
 
 #define true 1
 #define false 0
-typedef char bool;
 
 typedef struct 
 {
@@ -726,7 +725,7 @@ int main(int argc, char** argv) {
 	char* outputPath = argv[3];
 
 	char SibeliaCommand[1024] = {};
-	sprintf (SibeliaCommand, "Sibelia -k parameter/paraset_bacterial -m 70 %s %s -o %s", referenceFnaPath, targetFnaPath, outputPath);
+	sprintf (SibeliaCommand, "Sibelia -k tools/parameter/paraset_bacterial -m 70 %s %s -o %s", referenceFnaPath, targetFnaPath, outputPath);
 	system (SibeliaCommand);
 	TransformSibeliaToAll(	referenceFnaPath,					targetFnaPath,
 							&referenceMarkerInformation,		&targetMarkerInformation,

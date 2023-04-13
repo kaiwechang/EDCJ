@@ -12,8 +12,8 @@ TOOL_DIR = tools
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
 #TEST_DIR = ../testcase/sim_2000_50/sim_2000_30_5_200_10_50/2
 
-TARGETS = $(patsubst %.cpp, %, $(shell ls *.cpp))
-OBJECTS = $(patsubst %, $(BIN_DIR)/%.o, $(TARGETS))
+OBJECTS = $(patsubst %.cpp, $(BIN_DIR)/%.o, $(shell ls *.cpp))
+TOOLS = $(patsubst $(TOOL_DIR)/%.cpp, $(BIN_DIR)/%, $(shell ls $(TOOL_DIR)/*.cpp))
 
 .PHONY: all
 all: mkdir DCJ_Scaffolder
@@ -24,6 +24,11 @@ $(BIN_DIR)/%.o: %.cpp utils.h
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
 DCJ_Scaffolder: $(OBJECTS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(GUROBI_FLAGS)
+
+# for tools
+tools: mkdir $(TOOLS)
+$(BIN_DIR)/%: $(TOOL_DIR)/%.cpp
+	$(CXX) $< -o $@
 
 .SILENT:
 
@@ -74,19 +79,17 @@ experiment: all
 	done
 	$(TOOL_DIR)/print_table $(out_base)
 
-gen_real:
-	$(eval test_base="../../testcase/real_data")
-	cd $(TOOL_DIR);										\
-	gcc -w fna2all.c -o fna2all;						\
+gen_real: tools
+	$(eval test_base="../testcase/real_data")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
 		for dir in $$(ls $(test_base)/$$organ); do		\
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
-				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);			\
-				mkdir -p testcase/$$organ/$$dir;						\
-				./fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
-				cp $$ans testcase/$$organ/$$dir/;						\
+				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);					\
+				mkdir -p testcase/$$organ/$$dir;								\
+				$(BIN_DIR)/fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
+				cp $$ans testcase/$$organ/$$dir/;								\
 				mv testcase/$$organ/$$dir/sibelia/reference.all testcase/$$organ/$$dir/reference.all;	\
 				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/target.all;		\
 				rm -r testcase/$$organ/$$dir/sibelia;	\
@@ -94,25 +97,22 @@ gen_real:
 		done;											\
 	done
 
-gen_sim:
+gen_sim: tools
 	$(eval ori_mkr=3000)
 	$(eval dup_len=5)
 	$(eval evo_num=300)
 	$(eval ref_num=1)
 	$(eval tar_num=150)
 	# <# initial markers> <inverse rate> <duplicate length> <# evolutions> <# ref contigs> <# tar contigs> <output_dir>
-	cd $(TOOL_DIR);									\
-	g++ simulator.cpp -o simulator;					\
 	for inv in 10 20 30 40 50 60 70 80 90 100; do	\
 		for sub in 1 2 3 4 5; do					\
 			test_dir=testcase/sim_$(ori_mkr)_$${inv}_$(dup_len)_$(evo_num)_$(ref_num)_$(tar_num)/$$sub;	\
 			mkdir -p $$test_dir;					\
-			./simulator $(ori_mkr) $${inv} $(dup_len) $(evo_num) $(ref_num) $(tar_num)	$$test_dir;	\
+			$(BIN_DIR)/simulator $(ori_mkr) $$inv $(dup_len) $(evo_num) $(ref_num) $(tar_num) $$test_dir;\
 			rm $$test_dir/*_process;				\
 		done										\
 	done;											\
-	rm -f simulator
 
 .PHONY: clean
 clean:
-	@-rm -rf $(BIN_DIR) $(OUT_DIR) DCJ_Scaffolder
+	@-rm -rf $(BIN_DIR) $(OUT_DIR) testcase DCJ_Scaffolder
