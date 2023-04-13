@@ -3,7 +3,7 @@ CXXFLAGS = -O3 -m64 -std=c++20 -lm -lfmt
 MAKEFLAGS = -j $$(nproc --all)
 GUROBI_FLAGS = -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib -lgurobi_c++ -lgurobi100
 
-#SRC_DIR = src
+SRC_DIR = src
 BIN_DIR = bin
 OUT_DIR = output
 TOOL_DIR = tools
@@ -11,14 +11,14 @@ TOOL_DIR = tools
 #TEST_DIR = ../testcase/sim_smaller/sim1
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
 
-OBJECTS = $(patsubst %.cpp, $(BIN_DIR)/%.o, $(shell ls *.cpp))
+OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BIN_DIR)/%.o, $(shell ls $(SRC_DIR)/*.cpp))
 TOOLS = $(patsubst $(TOOL_DIR)/%.cpp, $(BIN_DIR)/%, $(shell ls $(TOOL_DIR)/*.cpp))
 
 .SILENT:
 
 DCJ_Scaffolder: $(OBJECTS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(GUROBI_FLAGS)
-$(BIN_DIR)/%.o: %.cpp utils.h | $(BIN_DIR)
+$(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp $(SRC_DIR)/utils.h | $(BIN_DIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
 $(BIN_DIR)/%: $(TOOL_DIR)/%.cpp | $(BIN_DIR)
 	$(CXX) $< -o $@
@@ -45,11 +45,11 @@ run_spd3E: DCJ_Scaffolder
 	| tee $(OUT_DIR)/evaulate.txt
 
 run_EBD: | $(OUT_DIR)
-	cd ../related_software/EBD_Scaffolder;			\
+	cd ../senior/EBD_Scaffolder;		\
 	./EBD_Scaffolder -s _Sibelia_ -m 70 -i 1800 -e	\
-	-cr ../$(TEST_DIR)/reference.all				\
-	-ct ../$(TEST_DIR)/target.all					\
-	-o ../../code/$(OUT_DIR)/result					\
+	-cr ../$(TEST_DIR)/reference.all	\
+	-ct ../$(TEST_DIR)/target.all		\
+	-o ../../code/$(OUT_DIR)/result		\
 	 > ../../code/$(OUT_DIR)/EBD_Scaffolder.log
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/result/ScaffoldResult	\
 	| tee $(OUT_DIR)/evaulate.txt
