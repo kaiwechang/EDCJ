@@ -11,8 +11,9 @@ TOOL_DIR = tools
 #TEST_DIR = ../testcase/sim_smaller/sim1
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
 
-OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BIN_DIR)/%.o, $(shell ls $(SRC_DIR)/*.cpp))
 TOOLS = $(patsubst $(TOOL_DIR)/%.cpp, $(BIN_DIR)/%, $(shell ls $(TOOL_DIR)/*.cpp))
+OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BIN_DIR)/%.o, $(shell ls $(SRC_DIR)/*.cpp))
+EBD_Scaffolder = ../senior/EBD_Scaffolder/EBD_Scaffolder
 
 .SILENT:
 
@@ -21,11 +22,13 @@ DCJ_Scaffolder: $(OBJECTS)
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp $(SRC_DIR)/utils.h | $(BIN_DIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
 $(BIN_DIR)/%: $(TOOL_DIR)/%.cpp | $(BIN_DIR)
-	$(CXX) $< -o $@
+	$(CXX) $< -o $@ $(CXXFLAGS)
 $(BIN_DIR):
 	mkdir -p $@
 $(OUT_DIR):
 	mkdir -p $@
+$(EBD_Scaffolder):
+	cd ../senior/EBD_Scaffolder; make
 
 .PHONY: all clean mkdir experiment run_* gen_*
 
@@ -44,7 +47,7 @@ run_spd3E: DCJ_Scaffolder
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_EBD: | $(OUT_DIR)
+run_EBD: $(EBD_Scaffolder) | $(OUT_DIR)
 	cd ../senior/EBD_Scaffolder;		\
 	./EBD_Scaffolder -s _Sibelia_ -m 70 -i 1800 -e	\
 	-cr ../$(TEST_DIR)/reference.all	\
@@ -60,7 +63,7 @@ run_time: DCJ_Scaffolder
 	make run_$$method OUT_DIR=$(OUT_DIR)	\
 	TEST_DIR=$(TEST_DIR)
 
-experiment: DCJ_Scaffolder
+experiment: DCJ_Scaffolder $(EBD_Scaffolder)
 	$(eval test_base="../testcase/real_test")
 	$(eval out_base=$(OUT_DIR))
 	for dir in $$(ls $(test_base)); do						\
