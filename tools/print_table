@@ -31,6 +31,28 @@ def read_files(tar_dir):
 					target["prec"] = float(lines[5].split()[1])
 					target["f_score"] = float(lines[6].split()[1])
 
+def read_files_real(tar_dir):
+	for organ in os.listdir(tar_dir):
+		for ref in os.listdir("%s/%s"%(tar_dir, organ)):
+			for method in os.listdir("%s/%s/%s"%(tar_dir, organ, ref)):
+				if organ not in data:
+					data[organ] = {}
+				if ref not in data[organ]:
+					data[organ][ref] = {}
+				if method not in data[organ][ref]:
+					data[organ][ref][method] = {}
+				target = data[organ][ref][method]
+				# exec time
+				with open("%s/%s/%s/%s/time.txt"%(tar_dir, organ, ref, method)) as file:
+					target["time"] = float(file.readline())
+				# prec
+				with open("%s/%s/%s/%s/evaulate.txt"%(tar_dir, organ, ref, method)) as file:
+					lines = file.readlines()
+					target["scaff"] = int(lines[0].split()[1])
+					target["sens"] = float(lines[4].split()[1])
+					target["prec"] = float(lines[5].split()[1])
+					target["f_score"] = float(lines[6].split()[1])
+
 def get_sorted_keys(data):
 	contig_list = sorted(data)
 	for contig in contig_list:
@@ -55,6 +77,56 @@ def write_file(tar_dir, item):
 				file.write("%9s"%method)
 			file.write(" |")
 		file.write("\n")
+		# content
+		for contig in contig_list:
+			for inv in inv_list:
+				file.write("-------------+")
+				for dup in dup_list:
+					for method in method_list:
+						file.write("---------")
+					file.write("-+")
+				file.write("\n")
+				for sub in sub_list:
+					file.write("%4d%4d%4d |"%(contig, inv, sub))
+					for dup in dup_list:
+						target = data[contig][inv][sub][dup]
+						fmt_str = {
+							"scaff": "%9d", 
+							"time": "%9.2f", 
+							"sens": "%9.3f", 
+							"prec": "%9.3f", 
+							"f_score": "%9.3f", 
+						}
+						for method in method_list:
+							file.write(fmt_str[item]%target[method][item])
+						file.write(" |")
+					file.write("\n")
+
+def write_file_real(tar_dir):
+	with open("%s/result.txt"%tar_dir, "w") as file:
+		item_list = ["sens", "prec", "f_score", "scaff", "time"]
+		org_len = max([len(organ) for organ in data])
+		ref_len = max([len(ref) for organ in data for ref in data[organ]])
+		# header
+		file.write("%*s | %*s |"%(org_len+ref_len+4, "", 6, ""))
+		for item in item_list:
+			file.write("%8s |"%item)
+		file.write("\n")
+		# content
+		for organ in sorted(data):
+			for ref in sorted(data[organ]):
+				# line start
+				file.write("-%s-+-%s-+--------+"%("-"*org_len, "-"*ref_len))
+				for item in item_list:
+					file.write("---------+")
+				file.write("\n")
+				# line end
+				for method in sorted(data[organ][ref]):
+					file.write(" %*s | %*s | %6s |"%(org_len, organ, ref_len, ref, method))
+					file.write(" %7.3f | %7.3f | %7.3f | %7d | %7.2f |"%
+							tuple([data[organ][ref][method][item] for item in item_list]))
+					file.write("\n")
+		return
 		# content
 		for contig in contig_list:
 			for inv in inv_list:
@@ -106,17 +178,24 @@ if __name__ == "__main__":
 		print("Please enter the target folder as an argument.")
 
 	data = {}
+	#mode = "real"
+	mode = sys.argv[2]
 	tar_dir = sys.argv[1]
 
-	read_files(tar_dir)
+	if mode == "sim":
+		read_files(tar_dir)
+		# data check
+		#import json
+		#print(json.dumps(data, sort_keys=True, indent=4))
+		contig_list, inv_list, sub_list, dup_list, method_list = get_sorted_keys(data)
+		for item in ["time", "scaff", "sens", "prec", "f_score"]:
+			write_file(tar_dir, item)
+		for item in ["time", "scaff", "sens", "prec", "f_score"]:
+			draw_plot(data, item)
+	elif mode == "real":
+		read_files_real(tar_dir)
+		# data check
+		#import json
+		#print(json.dumps(data, sort_keys=True, indent=4))
+		write_file_real(tar_dir)
 
-	# data check
-	#import json
-	#print(json.dumps(data, sort_keys=True, indent=4))
-
-	contig_list, inv_list, sub_list, dup_list, method_list = get_sorted_keys(data)
-	for item in ["time", "scaff", "sens", "prec", "f_score"]:
-		write_file(tar_dir, item)
-
-	for item in ["time", "scaff", "sens", "prec", "f_score"]:
-		draw_plot(data, item)
