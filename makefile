@@ -3,69 +3,66 @@ CXXFLAGS = -O3 -m64 -std=c++20 -lm -lfmt
 MAKEFLAGS = -j $$(nproc --all)
 GUROBI_FLAGS = -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib -lgurobi_c++ -lgurobi100
 
+#SRC_DIR = src
 BIN_DIR = bin
 OUT_DIR = output
 TOOL_DIR = tools
 #TEST_DIR = ../testcase/EI_test
 #TEST_DIR = ../testcase/sim_smaller/sim1
-#TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/1
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
-#TEST_DIR = ../testcase/sim_2000_50/sim_2000_30_5_200_10_50/2
 
 OBJECTS = $(patsubst %.cpp, $(BIN_DIR)/%.o, $(shell ls *.cpp))
 TOOLS = $(patsubst $(TOOL_DIR)/%.cpp, $(BIN_DIR)/%, $(shell ls $(TOOL_DIR)/*.cpp))
 
-.PHONY: all
-all: mkdir DCJ_Scaffolder
-
-mkdir:
-	@mkdir -p $(BIN_DIR) $(OUT_DIR)
-$(BIN_DIR)/%.o: %.cpp utils.h
-	$(CXX) -c $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
-DCJ_Scaffolder: $(OBJECTS)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(GUROBI_FLAGS)
-
-# for tools
-tools: mkdir $(TOOLS)
-$(BIN_DIR)/%: $(TOOL_DIR)/%.cpp
-	$(CXX) $< -o $@
-
 .SILENT:
 
-run_main: all
+DCJ_Scaffolder: $(OBJECTS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(GUROBI_FLAGS)
+$(BIN_DIR)/%.o: %.cpp utils.h | $(BIN_DIR)
+	$(CXX) -c $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
+$(BIN_DIR)/%: $(TOOL_DIR)/%.cpp | $(BIN_DIR)
+	$(CXX) $< -o $@
+$(BIN_DIR):
+	mkdir -p $@
+$(OUT_DIR):
+	mkdir -p $@
+
+.PHONY: all clean mkdir experiment run_* gen_*
+
+run_main: DCJ_Scaffolder
 	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR)
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_ilp: all
+run_ilp: DCJ_Scaffolder
 	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR) -n
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_spd3E: all
+run_spd3E: DCJ_Scaffolder
 	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR) -x
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_EBD: mkdir
+run_EBD: | $(OUT_DIR)
 	cd ../related_software/EBD_Scaffolder;			\
 	./EBD_Scaffolder -s _Sibelia_ -m 70 -i 1800 -e	\
 	-cr ../$(TEST_DIR)/reference.all				\
 	-ct ../$(TEST_DIR)/target.all					\
-	-o ../../src/$(OUT_DIR)/result					\
-	 > ../../src/$(OUT_DIR)/EBD_Scaffolder.log
+	-o ../../code/$(OUT_DIR)/result					\
+	 > ../../code/$(OUT_DIR)/EBD_Scaffolder.log
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/result/ScaffoldResult	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_time: all
+run_time: DCJ_Scaffolder
 	method=main;							\
 	time -f %e -o $(OUT_DIR)/time.txt		\
 	make run_$$method OUT_DIR=$(OUT_DIR)	\
 	TEST_DIR=$(TEST_DIR)
 
-experiment: all
+experiment: DCJ_Scaffolder
 	$(eval test_base="../testcase/real_test")
-	$(eval out_base="output")
+	$(eval out_base=$(OUT_DIR))
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
 			for method in EBD main spd3E; do				\
@@ -79,7 +76,7 @@ experiment: all
 	done
 	$(TOOL_DIR)/print_table $(out_base)
 
-gen_real: tools
+gen_real: $(BIN_DIR)/fna2all
 	$(eval test_base="../testcase/real_data")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
@@ -97,7 +94,7 @@ gen_real: tools
 		done;											\
 	done
 
-gen_sim: tools
+gen_sim: $(BIN_DIR)/simulator
 	$(eval ori_mkr=3000)
 	$(eval dup_len=5)
 	$(eval evo_num=300)
@@ -113,6 +110,5 @@ gen_sim: tools
 		done										\
 	done;											\
 
-.PHONY: clean
 clean:
 	@-rm -rf $(BIN_DIR) $(OUT_DIR) testcase DCJ_Scaffolder
