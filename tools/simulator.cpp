@@ -361,11 +361,11 @@ int main(int argc, char *argv[])
 	int num_contig_que = stoi(argv[6]);  //number of target contigs
 
 	string out_dir(argv[7]);
-	//string filename_anc = "reference_test.all";  //for using ancestor genome as reference
-	string filename_ref		= out_dir + "/reference.all";  //for using evloved genome as reference
-	string filename_que		= out_dir + "/query.all";
+	//string filename_anc = "reference_test.all";			// for using ancestor genome as reference
+	string filename_ref		= out_dir + "/reference.all";	// for using evloved genome as reference
+	string filename_que		= out_dir + "/target.all";		// used to be called query.all
 	string filename_ref_log = out_dir + "/reference_process";
-	string filename_que_log = out_dir + "/query_process";
+	string filename_que_log = out_dir + "/target_process";
 	string filename_ans		= out_dir + "/answerToAll";
 	
 	//int num_evol = float(num_marker) / (((100 - float(prob_event)) / 100) * float(len_dup));  //number of evolutions = N / ((1 - P) * L)

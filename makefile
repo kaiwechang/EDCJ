@@ -28,7 +28,7 @@ DCJ_Scaffolder: $(OBJECTS)
 .SILENT:
 
 run_main: all
-	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR)
+	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR)
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
@@ -38,7 +38,7 @@ run_ilp: all
 	| tee $(OUT_DIR)/evaulate.txt
 
 run_spd3E: all
-	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR) -x
+	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR) -x
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
@@ -46,7 +46,7 @@ run_EBD: mkdir
 	cd ../related_software/EBD_Scaffolder;			\
 	./EBD_Scaffolder -s _Sibelia_ -m 70 -i 1800 -e	\
 	-cr ../$(TEST_DIR)/reference.all				\
-	-ct ../$(TEST_DIR)/query.all					\
+	-ct ../$(TEST_DIR)/target.all					\
 	-o ../../src/$(OUT_DIR)/result					\
 	 > ../../src/$(OUT_DIR)/EBD_Scaffolder.log
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/result/ScaffoldResult	\
@@ -59,7 +59,7 @@ run_time: all
 	TEST_DIR=$(TEST_DIR)
 
 experiment: all
-	$(eval test_base="../testcase/sim_2000_100")
+	$(eval test_base="../testcase/real_test")
 	$(eval out_base="output")
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
@@ -88,7 +88,7 @@ gen_real:
 				./fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
 				cp $$ans testcase/$$organ/$$dir/;						\
 				mv testcase/$$organ/$$dir/sibelia/reference.all testcase/$$organ/$$dir/reference.all;	\
-				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/query.all;		\
+				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/target.all;		\
 				rm -r testcase/$$organ/$$dir/sibelia;	\
 			fi;											\
 		done;											\
