@@ -64,7 +64,7 @@ run_time: DCJ_Scaffolder
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/real_test")
+	$(eval test_base="../testcase/real_70")
 	$(eval out_base=$(OUT_DIR))
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
