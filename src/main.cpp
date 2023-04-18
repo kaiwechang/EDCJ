@@ -49,6 +49,44 @@ void readOptions(int argc, char* argv[], string& refPath, string& tarPath, strin
 	if (!fs::exists(outDir))
 		fs::create_directory(outDir);
 }
+void preprocess(string refFile, string tarFile, string outDir) {
+	int maxFamily = 0;
+	vector<Marker> ref, tar;
+	vector<string> refOrder, tarOrder;
+
+	string contig;
+	int id, family, tmp;
+
+	ifstream fin(refFile);
+	while (fin >> id >> family >> contig >> tmp) {
+		maxFamily = max(maxFamily, abs(family));
+		ref.push_back(Marker(id, family, contig));
+	}	fin.close();
+	fin.open(tarFile);
+	while (fin >> id >> family >> contig >> tmp) {
+		maxFamily = max(maxFamily, abs(family));
+		tar.push_back(Marker(id, family, contig));
+	}	fin.close();
+
+	// contig order
+	for (int i = 0; i < ref.size()-1; i++) {
+		if (i == 0)
+			refOrder.push_back(ref[i].contig);
+		if (ref[i].contig != ref[i+1].contig)
+			refOrder.push_back(ref[i+1].contig);
+	}
+	for (int i = 0; i < tar.size()-1; i++) {
+		if (i == 0)
+			tarOrder.push_back(tar[i].contig);
+		if (tar[i].contig != tar[i+1].contig)
+			tarOrder.push_back(tar[i+1].contig);
+	}
+
+	ofstream fout(outDir+"/info.txt");
+	fout << format("          ref   tar\n");
+	fout << format("marker: {:5d} {:5d}\n", ref.size(), tar.size());
+	fout << format("contig: {:5d} {:5d}\n", refOrder.size(), tarOrder.size());
+}
 int main(int argc, char* argv[]) {
 	double gap = -1;
 	int procs = -1, timelimit = -1;
@@ -59,6 +97,8 @@ int main(int argc, char* argv[]) {
 
 	readOptions(argc, argv, refPath, tarPath, outDir, mode, extended, gap, procs, timelimit,
 				spd1, spd3, rewrite, align);
+
+	preprocess(refPath, tarPath, outDir);
 
 	if (spd1)
 		mode != EDCJ ? 
