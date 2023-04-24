@@ -6,14 +6,15 @@ namespace fs = std::filesystem;
 
 ofstream logFile;
 
-void readOptions(int argc, char* argv[], string& refPath, string& tarPath, string& outDir, Mode& mode, bool& extended, double& gap, int& procs, int& timelimit, bool& spd1, bool& spd3, bool& rewrite, bool& align) {
+void readOptions(int argc, char* argv[], string& refPath, string& tarPath, string& outDir, Mode& mode, bool& extended, double& gap, int& procs, int& timelimit, bool& spd1, bool& spd3, bool& rewrite, bool& align, bool& capping) {
 	char option;
-	while ((option = getopt(argc, argv, ":g:l:o:p:r:t:s:miexhan")) != -1)
+	while ((option = getopt(argc, argv, ":g:l:o:p:r:t:s:miexhacn")) != -1)
 		switch (option) {
 			case 'e':	mode = EDCJ;					break;
 			case 'i':	mode = IDCJ;					break;
 			case 'm':	mode = MMDCJ;					break;
 			case 'a':	align = true;					break;	// for debugging spd3R
+			case 'c':	capping = true;					break;	// for debugging capping
 			case 'n':	rewrite = true;					break;	// for debugging ilp_R
 			case 'x':	extended = true;				break;
 			case 'o':	outDir = optarg;				break;
@@ -92,11 +93,11 @@ int main(int argc, char* argv[]) {
 	int procs = -1, timelimit = -1;
 	string refPath, tarPath, outDir = "output";
 	bool extended = false, spd1 = true, spd3 = true;
-	bool rewrite = false, align = false;
+	bool rewrite = false, align = false, capping = false;
 	Mode mode = EDCJ;
 
 	readOptions(argc, argv, refPath, tarPath, outDir, mode, extended, gap, procs, timelimit,
-				spd1, spd3, rewrite, align);
+				spd1, spd3, rewrite, align, capping);
 
 	preprocess(refPath, tarPath, outDir);
 
@@ -110,7 +111,8 @@ int main(int argc, char* argv[]) {
 		speedup_3E	(outDir+"/ref_spd1.all", outDir+"/tar_spd1.all", outDir, extended):
 		speedup_3ER	(outDir+"/ref_spd1.all", outDir+"/tar_spd1.all", outDir, extended);
 
-	rewrite == false ? 
+	rewrite == false ? capping == true ? 
+		ilp_cap	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir, mode, gap, procs, timelimit):
 		ilp_old	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir, mode, gap, procs, timelimit):
 		ilp_new	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir, mode, gap, procs, timelimit);
 

@@ -82,6 +82,7 @@ int speedup_1	(string, string, string);
 int speedup_1E	(string, string, string);
 int speedup_3E	(string, string, string, bool);
 int speedup_3ER	(string, string, string, bool);
+int ilp_cap		(string, string, string, Mode, int, int, int);
 int ilp_old		(string, string, string, Mode, int, int, int);
 int ilp_new		(string, string, string, Mode, int, int, int);
 int postprocess	(string, string, string);

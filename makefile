@@ -57,7 +57,7 @@ run_EBD: $(EBD_Scaffolder) | $(OUT_DIR)
 	$(TOOL_DIR)/misJoin_eval.php $(TEST_DIR)/answerToAll $(OUT_DIR)/result/ScaffoldResult	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_time: DCJ_Scaffolder
+run_time: DCJ_Scaffolder | $(OUT_DIR)
 	method=main;							\
 	time -f %e -o $(OUT_DIR)/time.txt		\
 	make run_$$method OUT_DIR=$(OUT_DIR)	\
