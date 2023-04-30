@@ -89,7 +89,7 @@ static void speedup(auto& ref, auto& tar, auto& refFamilySize, auto& tarFamilySi
 					int f1r = g2[idx(tp1.rhs)].family;
 					int f2l = g2[idx(tp2.lhs)].family;
 					int f2r = g2[idx(tp2.rhs)].family;
-					concat(g1, i,  f1l, -f2l, tp1.lhs, tp2.lhs, tp1.ljs, tp2.ljs);
+					concat(g1, i, -f1l,  f2l, tp1.lhs, tp2.lhs, tp1.ljs, tp2.ljs);
 					concat(g1, i, -f1l, -f2r, tp1.lhs, tp2.rhs, tp1.ljs, tp2.rjs);
 					concat(g1, i,  f1r,  f2l, tp1.rhs, tp2.lhs, tp1.rjs, tp2.ljs);
 					concat(g1, i,  f1r, -f2r, tp1.rhs, tp2.rhs, tp1.rjs, tp2.rjs);
