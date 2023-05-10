@@ -101,22 +101,28 @@ int main(int argc, char* argv[]) {
 
 	preprocess(refPath, tarPath, outDir);
 
-	if (spd1)
+	if (spd1) {
 		mode != EDCJ ? 
 		speedup_1	(refPath, tarPath, outDir):
 		speedup_1E	(refPath, tarPath, outDir);
+		refPath = outDir + "/ref_spd1.all";
+		tarPath = outDir + "/tar_spd1.all";
+	}
 
-	if (spd3)
+	if (spd3) {
 		align == false ? 
-		speedup_3E	(outDir+"/ref_spd1.all", outDir+"/tar_spd1.all", outDir, extended):
-		speedup_3ER	(outDir+"/ref_spd1.all", outDir+"/tar_spd1.all", outDir, extended);
+		speedup_3E	(refPath, tarPath, outDir, extended):
+		speedup_3ER	(refPath, tarPath, outDir, extended);
+		refPath = outDir + "/ref_spd3.all";
+		tarPath = outDir + "/tar_spd3.all";
+	}
 
 	rewrite == false ? capping == true ? 
-		ilp_cap	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir, mode, gap, procs, timelimit):
-		ilp_old	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir, mode, gap, procs, timelimit):
-		ilp_new	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir, mode, gap, procs, timelimit);
+		ilp_cap	(refPath, tarPath, outDir, mode, gap, procs, timelimit):
+		ilp_old	(refPath, tarPath, outDir, mode, gap, procs, timelimit):
+		ilp_new	(refPath, tarPath, outDir, mode, gap, procs, timelimit);
 
-	postprocess	(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", outDir);
+	postprocess	(refPath, tarPath, outDir);
 
 	return 0;
 }
