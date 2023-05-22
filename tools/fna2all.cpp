@@ -92,12 +92,13 @@ void outputAll(string refFile, string tarFile, auto& ref, auto& tar, auto& reord
 	fout.close();
 }
 int main(int argc, char* argv[]) {
-	string refFNA(argv[1]);
-	string tarFNA(argv[2]);
-	string outDir(argv[3]);
+	int paramM = std::stoi(argv[1]);
+	string refFNA(argv[2]);
+	string tarFNA(argv[3]);
+	string outDir(argv[4]);
 
 	string command =
-		format("Sibelia -k tools/parameter/paraset_bacterial -m 70 {} {} -o {}", refFNA, tarFNA, outDir);
+		format("Sibelia -k tools/parameter/paraset_bacterial -m {} {} {} -o {}", paramM, refFNA, tarFNA, outDir);
 	if (system(command.c_str()) != 0) {
 		print("[error] Cannot execute Sibelia commands!!\n");
 		exit(1);

@@ -64,7 +64,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/real_70")
+	$(eval test_base="../testcase/MeDuSa_70")
 	$(eval out_base=$(OUT_DIR))
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
@@ -77,10 +77,13 @@ experiment: DCJ_Scaffolder $(EBD_Scaffolder)
 			done											\
 		done												\
 	done
-	$(TOOL_DIR)/print_table $(out_base)
+	$(TOOL_DIR)/print_table $(out_base) real
 
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/real_data")
+	#$(eval sibelia_m=40)
+	#$(eval test_base="../testcase/SIS_data")
+	sibelia_m="70";	\
+	test_base="../testcase/MeDuSa_data";	\
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
@@ -88,7 +91,7 @@ gen_real: $(BIN_DIR)/fna2all
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
 				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);					\
 				mkdir -p testcase/$$organ/$$dir;								\
-				$(BIN_DIR)/fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
+				$(BIN_DIR)/fna2all $$sibelia_m $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
 				cp $$ans testcase/$$organ/$$dir/;								\
 				mv testcase/$$organ/$$dir/sibelia/reference.all testcase/$$organ/$$dir/reference.all;	\
 				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/target.all;		\
