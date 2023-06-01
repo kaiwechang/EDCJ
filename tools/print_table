@@ -3,39 +3,18 @@
 import os, sys
 import matplotlib.pyplot as plt
 
-def read_files(tar_dir):
-	for testcase in os.listdir(tar_dir):
-		_, _, inv, dup, _, contig, _ = testcase.split("_")
-		for sub in os.listdir("%s/%s"%(tar_dir, testcase)):
-			for method in os.listdir("%s/%s/%s"%(tar_dir, testcase, sub)):
-				contig, inv, sub, dup = int(contig), int(inv), int(sub), int(dup)
-				if contig not in data:
-					data[contig] = {}
-				if inv not in data[contig]:
-					data[contig][inv] = {}
-				if sub not in data[contig][inv]:
-					data[contig][inv][sub] = {}
-				if dup not in data[contig][inv][sub]:
-					data[contig][inv][sub][dup] = {}
-				if method not in data[contig][inv][sub][dup]:
-					data[contig][inv][sub][dup][method] = {}
-				# exec time
-				with open("%s/%s/%d/%s/time.txt"%(tar_dir, testcase, sub, method)) as file:
-					data[contig][inv][sub][dup][method]["time"] = float(file.readline())
-				# prec
-				with open("%s/%s/%d/%s/evaulate.txt"%(tar_dir, testcase, sub, method)) as file:
-					lines = file.readlines()
-					data[contig][inv][sub][dup][method] |= {
-						"scaff": int(lines[0].split()[1]),
-						"sens": float(lines[4].split()[1]),
-						"prec": float(lines[5].split()[1]),
-						"f_score": float(lines[6].split()[1])
-					}
-
-def read_files_real(tar_dir):
+def read_files(tar_dir, mode):
 	for organ in os.listdir(tar_dir):
-		for ref in os.listdir("%s/%s"%(tar_dir, organ)):
-			for method in os.listdir("%s/%s/%s"%(tar_dir, organ, ref)):
+		if not os.path.isdir("%s/%s"%(tar_dir, organ)):
+			continue
+		organ_path = "%s/%s"%(tar_dir, organ)
+		if mode == "sim":
+			_, _, inv, _, _, _, _ = organ.split("_")
+			organ = int(inv)
+		for ref in os.listdir(organ_path):
+			for method in os.listdir("%s/%s"%(organ_path, ref)):
+				if method == "analysis.txt":
+					continue
 				if organ not in data:
 					data[organ] = {}
 					info[organ] = {}
@@ -46,10 +25,10 @@ def read_files_real(tar_dir):
 					data[organ][ref][method] = {}
 					info[organ][ref][method] = {}
 				# exec time
-				with open("%s/%s/%s/%s/time.txt"%(tar_dir, organ, ref, method)) as file:
+				with open("%s/%s/%s/time.txt"%(organ_path, ref, method)) as file:
 					data[organ][ref][method]["time"] = float(file.readline())
 				# prec
-				with open("%s/%s/%s/%s/evaulate.txt"%(tar_dir, organ, ref, method)) as file:
+				with open("%s/%s/%s/evaulate.txt"%(organ_path, ref, method)) as file:
 					lines = file.readlines()
 					data[organ][ref][method] |= {
 						"scaff": int(lines[0].split()[1]),
@@ -57,79 +36,33 @@ def read_files_real(tar_dir):
 						"prec": float(lines[5].split()[1]),
 						"f_score": float(lines[6].split()[1])
 					}
-				# basic info
-				info_path = "%s/%s/%s/%s/info.txt"%(tar_dir, organ, ref, method)
-				if os.path.exists(info_path):
-					with open(info_path) as file:
-						lines = file.readlines()
-						info[organ][ref][method] |= {
-							"marker": {
-								"ref": int(lines[1].split()[1]),
-								"tar": int(lines[1].split()[2])
-							}, "contig": {
-								"ref": int(lines[2].split()[1]),
-								"tar": int(lines[2].split()[2])
-							}
-						}
+				# data analysis
+				info_path = "%s/%s/analysis.txt"%(organ_path, ref)
+				with open(info_path) as file:
+					lines = file.readlines()
+					info[organ][ref][method] |= {
+						"marker": {
+							"ref": int(lines[1].split()[1]),
+							"tar": int(lines[1].split()[2])
+						}, "contig": {
+							"ref": int(lines[2].split()[1]),
+							"tar": int(lines[2].split()[2])
+						},
+						"dup_rate":  float(lines[4].split()[1]),
+						"dist_rate": float(lines[5].split()[1])
+					}
 
-def get_sorted_keys(data):
-	contig_list = sorted(data)
-	for contig in contig_list:
-		inv_list = sorted(data[contig])
-		for inv in inv_list:
-			sub_list = sorted(data[contig][inv])
-			for sub in sub_list:
-				dup_list = sorted(data[contig][inv][sub])
-				for dup in dup_list:
-					method_list = sorted(data[contig][inv][sub][dup])
-					return contig_list, inv_list, sub_list, dup_list, method_list
-
-def write_file(tar_dir, item):
-	with open("%s/%s.txt"%(tar_dir, item), "w") as file:
-		# header
-		file.write("%12s |"%"")
-		for dup in dup_list:
-			file.write("%*s |"%(9*len(method_list), "dup length %d"%dup))
-		file.write("\n%4s%4s%4s |"%("con", "inv", "sub"))
-		for dup in dup_list:
-			for method in method_list:
-				file.write("%9s"%method)
-			file.write(" |")
-		file.write("\n")
-		# content
-		for contig in contig_list:
-			for inv in inv_list:
-				file.write("-------------+")
-				for dup in dup_list:
-					for method in method_list:
-						file.write("---------")
-					file.write("-+")
-				file.write("\n")
-				for sub in sub_list:
-					file.write("%4d%4d%4d |"%(contig, inv, sub))
-					for dup in dup_list:
-						fmt_str = {
-							"scaff": "%9d", 
-							"time": "%9.2f", 
-							"sens": "%9.3f", 
-							"prec": "%9.3f", 
-							"f_score": "%9.3f", 
-						}
-						for method in method_list:
-							file.write(fmt_str[item]%data[contig][inv][sub][dup][method][item])
-						file.write(" |")
-					file.write("\n")
-
-def write_file_real(tar_dir):
+def write_file(tar_dir, mode):
 	with open("%s/result.txt"%tar_dir, "w") as file:
 		item_list = ["sens", "prec", "f_score", "scaff", "time"]
-		org_len = max([len(organ) for organ in data])
+		org_len = max([len(str(organ)) for organ in data])
 		ref_len = max([len(ref) for organ in data for ref in data[organ]])
 		# header
 		file.write(" %*s | %*s |"%(org_len+ref_len+3, "", 6, ""))
 		for item in item_list:
 			file.write("%8s |"%item)
 		file.write(" %*s marker | %*s contig |"%(10, "", 10, ""))
+		file.write("     dup |    dist |")
 		file.write("\n")
 		# content
 		for organ in sorted(data):
@@ -138,23 +71,25 @@ def write_file_real(tar_dir):
 				file.write("-%s-+-%s-+--------+"%("-"*org_len, "-"*ref_len))
 				for item in item_list:
 					file.write("---------+")
-				for i in range(4):
+				for i in range(6):
 					file.write("---------+")
 				file.write("\n")
 				# line end
 				for method in sorted(data[organ][ref]):
-					file.write(" %*s | %*s | %6s |"%(org_len, organ, ref_len, ref, method))
+					file.write(" %-*s | %-*s | %-6s |"%(org_len, organ, ref_len, ref, method))
 					file.write(" %7.3f | %7.3f | %7.3f | %7d | %7.2f |"%
 							tuple([data[organ][ref][method][item] for item in item_list]))
 					target = info[organ][ref][method]
-					if "marker" in target:
-						file.write(" %7d | %7d |"%(target["marker"]["ref"], target["marker"]["tar"]))
-						file.write(" %7d | %7d |"%(target["contig"]["ref"], target["contig"]["tar"]))
-					else:
-						file.write(" %7s | %7s | %7s | %7s |"%("--", "--", "--", "--"))
+					file.write(" %7d | %7d |"%(target["marker"]["ref"], target["marker"]["tar"]))
+					file.write(" %7d | %7d |"%(target["contig"]["ref"], target["contig"]["tar"]))
+					file.write(" %7.3f | %7.3f |"%(target["dup_rate"], target["dist_rate"]))
 					file.write("\n")
 
 def draw_plot(data, item):
+	inv_list = sorted(data)
+	sub_list = sorted(data[inv_list[0]])
+	method_list = sorted(data[inv_list[0]][sub_list[0]])
+
 	plt.figure()
 	plt.title(tar_dir)
 	plt.xticks(range(len(inv_list)), inv_list)
@@ -171,34 +106,26 @@ def draw_plot(data, item):
 		plt.ylim([0.5, 1])
 	plt.grid(True)
 	for method in method_list:
-		plt.plot([sum([data[contig_list[0]][inv][sub][dup_list[0]][method][item] for sub in sub_list])/5 for inv in inv_list])
+		plt.plot([sum([data[inv][sub][method][item] for sub in sub_list])/len(sub_list) for inv in inv_list])
 	plt.legend(loc="best", labels=method_list)
 	plt.savefig("%s/%s.png"%(tar_dir, item))
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
-		print("Please enter the target folder as an argument.")
+		print("Usage: ./print_table <tar_dir>")
 
 	info = {}
 	data = {}
-	#mode = "real"
-	mode = sys.argv[2]
 	tar_dir = sys.argv[1]
 
+	mode = "sim" if os.listdir(tar_dir)[0][0:3] == "sim" else "real"
+
+	read_files(tar_dir, mode)
+	write_file(tar_dir, mode)
+	# data check
+	#import json
+	#print(json.dumps(data, sort_keys=True, indent=4))
 	if mode == "sim":
-		read_files(tar_dir)
-		# data check
-		#import json
-		#print(json.dumps(data, sort_keys=True, indent=4))
-		contig_list, inv_list, sub_list, dup_list, method_list = get_sorted_keys(data)
-		for item in ["time", "scaff", "sens", "prec", "f_score"]:
-			write_file(tar_dir, item)
 		for item in ["time", "scaff", "sens", "prec", "f_score"]:
 			draw_plot(data, item)
-	elif mode == "real":
-		read_files_real(tar_dir)
-		# data check
-		#import json
-		#print(json.dumps(data, sort_keys=True, indent=4))
-		write_file_real(tar_dir)
 

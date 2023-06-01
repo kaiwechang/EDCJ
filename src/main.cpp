@@ -83,10 +83,10 @@ void preprocess(string refFile, string tarFile, string outDir) {
 			tarOrder.push_back(tar[i+1].contig);
 	}
 
-	ofstream fout(outDir+"/info.txt");
+	/*ofstream fout(outDir+"/info.txt");
 	fout << format("          ref   tar\n");
 	fout << format("marker: {:5d} {:5d}\n", ref.size(), tar.size());
-	fout << format("contig: {:5d} {:5d}\n", refOrder.size(), tarOrder.size());
+	fout << format("contig: {:5d} {:5d}\n", refOrder.size(), tarOrder.size());*/
 }
 int main(int argc, char* argv[]) {
 	double gap = -1;
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
 	readOptions(argc, argv, refPath, tarPath, outDir, mode, extended, gap, procs, timelimit,
 				spd1, spd3, rewrite, align, capping);
 
-	preprocess(refPath, tarPath, outDir);
+	//preprocess(refPath, tarPath, outDir);
 
 	if (spd1) {
 		mode != EDCJ ? 

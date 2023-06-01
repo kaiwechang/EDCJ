@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+
+import os, sys
+import matplotlib.pyplot as plt
+
+def read_ref(ref_file, family_count):
+	contigs = set()
+	with open(ref_file) as file:
+		lines = file.readlines()
+		for line in lines:
+			uid, family, contig, temp = line.split()
+			#print(uid, family, contig, temp)
+			abs_family = abs(int(family))
+			if abs_family in family_count:
+				family_count[abs_family] += 1
+			else:
+				family_count[abs_family] = 1
+			contigs.add(contig)
+		ref_marker_num = len(lines)
+		ref_contig_num = len(contigs)
+	return family_count, ref_marker_num, ref_contig_num
+
+def read_tar(tar_file, family_count):
+	contigs = set()
+	with open(tar_file) as file:
+		lines = file.readlines()
+		for line in lines:
+			uid, family, contig, temp = line.split()
+			#print(uid, family, contig, temp)
+			abs_family = abs(int(family))
+			if abs_family in family_count:
+				family_count[abs_family] += 1
+			else:
+				family_count[abs_family] = 1
+			contigs.add(contig)
+		tar_marker_num = len(lines)
+		tar_contig_num = len(contigs)
+	return family_count, tar_marker_num, tar_contig_num
+
+def count_dup(family_count):
+	family_count_rev = {}
+	for k, v in family_count.items():
+		if v in family_count_rev:
+			family_count_rev[v] += 1
+		else:
+			family_count_rev[v] = 1
+
+	#import json
+	#print(json.dumps(family_count_rev, sort_keys=True, indent=4))
+
+	fcr_list = family_count_rev.items()
+	return sum([k*v for k, v in fcr_list])/sum([v for k, v in fcr_list])/2
+
+def cal_dist():
+	pass
+
+def write_file(filename):
+	with open(filename, "w") as file:
+		file.write("          ref   tar\n")
+		file.write("marker: %5d %5d\n"%(ref_marker_num, ref_contig_num))
+		file.write("contig: %5d %5d\n"%(tar_marker_num, tar_contig_num))
+		file.write("\n")
+		file.write("dup_rate:  %.3f\n"%dup_rate)
+		file.write("dist_rate: %.3f\n"%9.99)
+
+if __name__ == "__main__":
+	if len(sys.argv) < 4:
+		print("Usage: ./analyze_data <ref_genome> <tar_genome> <out_dir>")
+		exit(1)
+	ref_file, tar_file, out_dir = sys.argv[1:4]
+
+	# vars
+	family_count = {}
+	ref_marker_num, tar_marker_num = 0, 0
+	ref_contig_num, tar_contig_num = 0, 0
+	dup_rate, dist_rate = 0, 0
+
+	# read ref/tar genomes
+	family_count, ref_marker_num, ref_contig_num = read_ref(sys.argv[1], family_count)
+	family_count, tar_marker_num, tar_contig_num = read_tar(sys.argv[2], family_count)
+
+	# calculate
+	dup_rate = count_dup(family_count)
+
+	# output file
+	write_file("%s/analysis.txt"%out_dir)
+
