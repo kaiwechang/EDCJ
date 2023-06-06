@@ -1,4 +1,4 @@
-#include <set>
+#include <map>
 #include <vector>
 #include <utility>
 #include <fstream>
@@ -11,7 +11,7 @@ using fmt::format;
 using std::vector;
 using std::string;
 
-using std::set;
+using std::map;
 using std::pair;
 using std::make_pair;
 
@@ -23,13 +23,13 @@ void readFNA(string refFNA, string tarFNA, auto& refContigs, auto& tarContigs) {
 	std::ifstream fin(refFNA);
 	while (fin >> token) {
 		if (token[0] == '>')
-			refContigs.insert(string(token.begin()+1, token.end()));
+			refContigs[string(token.begin()+1, token.end())] = 0;
 	}	fin.close();
 
 	fin.open(tarFNA);
 	while (fin >> token) {
 		if (token[0] == '>')
-			tarContigs.insert(string(token.begin()+1, token.end()));
+			tarContigs[string(token.begin()+1, token.end())] = 0;
 	}	fin.close();
 }
 void readBlock(string blockFile, auto& refContigs, auto& tarContigs, auto& reorder) {
@@ -62,11 +62,14 @@ void readPermu(string permuFile, auto& ref, auto& tar, auto& refContigs, auto& t
 	string token, marker;
 	while (fin >> token) {
 		string contig(token.begin()+1, token.end());
-		auto genomeInfo = refContigs.count(contig) > 0 ? &ref : & tar ;
+		auto genomeInfo = refContigs.count(contig) > 0 ? &ref : &tar ;
 		auto contigInfo = make_pair(contig, vector<int>());
 		while (fin >> marker) {
 			if (marker == "$") break;
 			contigInfo.second.push_back(std::stoi(marker));
+			genomeInfo == &ref ?
+				refContigs[contig] += 1 :
+				tarContigs[contig] += 1 ;
 		}	genomeInfo->push_back(contigInfo);
 	}
 }
@@ -91,20 +94,32 @@ void outputAll(string refFile, string tarFile, auto& ref, auto& tar, auto& reord
 		}
 	fout.close();
 }
+void outputReducedContigs(string rmFile, auto& refContigs, auto& tarContigs) {
+	int uid = 1;
+	ofstream fout(rmFile);
+	fout << format("ref:\n");
+	for (auto& [contig, num]: refContigs)
+		if (num == 0) fout << format("{} {}\n", uid++, contig);
+	uid = 1;
+	fout << format("\ntar:\n");
+	for (auto& [contig, num]: tarContigs)
+		if (num == 0) fout << format("{} {}\n", uid++, contig);
+	fout.close();
+}
 int main(int argc, char* argv[]) {
-	int paramM = std::stoi(argv[1]);
-	string refFNA(argv[2]);
-	string tarFNA(argv[3]);
-	string outDir(argv[4]);
+	string refFNA(argv[1]);
+	string tarFNA(argv[2]);
+	string outDir(argv[3]);
 
 	string command =
-		format("Sibelia -k tools/parameter/paraset_bacterial -m {} {} {} -o {}", paramM, refFNA, tarFNA, outDir);
+		format("Sibelia -k tools/parameter/paraset_bacterial -m 70 {} {} -o {}", refFNA, tarFNA, outDir);
+	//	format("Sibelia -s far -m 20 {} {} -o {}", refFNA, tarFNA, outDir);
 	if (system(command.c_str()) != 0) {
 		print("[error] Cannot execute Sibelia commands!!\n");
 		exit(1);
 	}
 
-	set<string> refContigs, tarContigs;
+	map<string, int> refContigs, tarContigs;
 	vector<pair<string, vector<int>>> ref, tar;
 	vector<int> reorder(1, -1);
 
@@ -116,5 +131,6 @@ int main(int argc, char* argv[]) {
 	readBlock(outDir+"/blocks_coords.txt", refContigs, tarContigs, reorder);
 
 	outputAll(outDir+"/reference.all", outDir+"/target.all", ref, tar, reorder);
+	outputReducedContigs(outDir+"/reduced.txt", refContigs, tarContigs);
 	return 0;
 }

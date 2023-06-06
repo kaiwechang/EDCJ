@@ -64,7 +64,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/sim_1000/simdata1")
+	$(eval test_base="../testcase/EBD_70")
 	$(eval out_base=$(OUT_DIR))
 	for dir in $$(ls $(test_base)); do						\
 		for sub in $$(ls $(test_base)/$$dir); do			\
@@ -82,12 +82,11 @@ experiment: DCJ_Scaffolder $(EBD_Scaffolder)
 	# print_table read from analyze_data and gredu and then draw plot
 
 analyze: | $(OUT_DIR)
-	#../related/GREDU/bin/dcj $(test_base)/reference.all $(test_base)/target.all 100
+	#../related/GREDU/bin/dcj $(TEST_DIR)/reference.all $(TEST_DIR)/target.all 100
 	$(TOOL_DIR)/analyze_data $(TEST_DIR)/reference.all $(TEST_DIR)/target.all $(OUT_DIR)
 
 gen_real: $(BIN_DIR)/fna2all
-	$(eval sibelia_m=70)
-	$(eval test_base="../testcase/SIS_data")
+	$(eval test_base="../testcase/EBD_data")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
@@ -95,10 +94,11 @@ gen_real: $(BIN_DIR)/fna2all
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
 				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);					\
 				mkdir -p testcase/$$organ/$$dir;								\
-				$(BIN_DIR)/fna2all $(sibelia_m) $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
+				$(BIN_DIR)/fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
 				cp $$ans testcase/$$organ/$$dir/answerToAll;								\
 				mv testcase/$$organ/$$dir/sibelia/reference.all testcase/$$organ/$$dir/reference.all;	\
 				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/target.all;		\
+				mv testcase/$$organ/$$dir/sibelia/reduced.txt	testcase/$$organ/$$dir/reduced.txt;		\
 				rm -r testcase/$$organ/$$dir/sibelia;	\
 			fi;											\
 		done;											\
