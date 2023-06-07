@@ -54,7 +54,10 @@ def count_dup(family_count):
 def cal_dist():
 	pass
 
-def write_file(filename):
+def write_file(filename,
+		ref_marker_num, ref_contig_num,
+		tar_marker_num, tar_contig_num,
+		dup_rate, dist_rate):
 	with open(filename, "w") as file:
 		file.write("          ref   tar\n")
 		file.write("marker: %5d %5d\n"%(ref_marker_num, ref_contig_num))
@@ -63,7 +66,7 @@ def write_file(filename):
 		file.write("dup_rate:  %.3f\n"%dup_rate)
 		file.write("dist_rate: %.3f\n"%9.99)
 
-if __name__ == "__main__":
+def main():
 	if len(sys.argv) < 4:
 		print("Usage: ./analyze_data <ref_genome> <tar_genome> <out_dir>")
 		exit(1)
@@ -83,5 +86,11 @@ if __name__ == "__main__":
 	dup_rate = count_dup(family_count)
 
 	# output file
-	write_file("%s/analysis.txt"%out_dir)
+	write_file("%s/analysis.txt"%out_dir,
+			ref_marker_num, ref_contig_num,
+			tar_marker_num, tar_contig_num,
+			dup_rate, dist_rate)
+
+if __name__ == "__main__":
+	main()
 
