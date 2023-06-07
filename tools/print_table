@@ -84,6 +84,20 @@ def write_file(tar_dir, data, info, mode):
 					file.write(" %7.3f | %7.3f |"%(target["dup_rate"], target["dist_rate"]))
 					file.write("\n")
 
+	with open("%s/better.txt"%tar_dir, "w") as file:
+		for organ in info:
+			for ref in info[organ]:
+				target = data[organ][ref]
+				if target["EBD"]["f_score"] < target["EDCJ"]["f_score"]:
+					file.write("%10s %15s %7.3f %7.3f\n"%(organ, ref, target["EBD"]["f_score"], target["EDCJ"]["f_score"]))
+
+	with open("%s/faster.txt"%tar_dir, "w") as file:
+		for organ in info:
+			for ref in info[organ]:
+				target = data[organ][ref]
+				if target["EBD"]["time"] > target["EDCJ"]["time"]:
+					file.write("%10s %15s %7.3f %7.3f\n"%(organ, ref, target["EBD"]["time"], target["EDCJ"]["time"]))
+
 def draw_plot(tar_dir, data, item):
 	inv_list = sorted(data)
 	sub_list = sorted(data[inv_list[0]])
@@ -130,6 +144,7 @@ def draw_analysis_plot(plot_name, data, info):
 	temp.legend_handles[1].set_color("blue")
 	temp.legend_handles[2].set_color("purple")
 	plt.savefig(plot_name)
+
 
 def main():
 	if len(sys.argv) < 2:
