@@ -64,20 +64,21 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/EBD_70")
-	$(eval out_base=$(OUT_DIR))
-	for dir in $$(ls $(test_base)); do						\
-		for sub in $$(ls $(test_base)/$$dir); do			\
-			make analyze OUT_DIR=$(out_base)/$$dir/$$sub	\
-			TEST_DIR=$(test_base)/$$dir/$$sub;				\
-			for method in EBD EDCJ spd3E; do			\
-				tar_dir=$(out_base)/$$dir/$$sub/$$method;	\
-				mkdir -p $$tar_dir;							\
-				time -f %e -o $$tar_dir/time.txt			\
-				make run_$$method OUT_DIR=$$tar_dir			\
-				TEST_DIR=$(test_base)/$$dir/$$sub;			\
-			done											\
-		done												\
+	$(eval test_base="../testcase/EBD_test")
+	for dir in $$(ls $(test_base)); do				\
+		for sub in $$(ls $(test_base)/$$dir); do	\
+			out_base=$(OUT_DIR)/$$dir/$$sub;		\
+			for method in EBD EDCJ spd3E; do		\
+				tar_dir=$$out_base/$$method;		\
+				mkdir -p $$tar_dir;					\
+				time -f %e -o $$tar_dir/time.txt	\
+				make run_$$method OUT_DIR=$$tar_dir	\
+				TEST_DIR=$(test_base)/$$dir/$$sub;	\
+			done;									\
+			cp $$out_base/EDCJ/DCJ.txt $$out_base;	\
+			make analyze OUT_DIR=$$out_base			\
+			TEST_DIR=$(test_base)/$$dir/$$sub;		\
+		done										\
 	done
 	# print_table read from analyze_data and gredu and then draw plot
 

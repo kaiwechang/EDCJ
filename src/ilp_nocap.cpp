@@ -945,6 +945,7 @@ static void findMax(GRBModel &model)
 	//model.setObjective(2 * refRemoveMarkerNum - cycleSum); //removal cost = 3
 	model.setObjective(-refRemoveMarkerNum - cycleSum); //no removal cost
 	//model.setObjective(-cycleSum);
+
 	model.getEnv().set("TimeLimit", "1800");
 
 	//model.setObjectiveN(-refRemoveMarkerNum - cycleSum, 0, 1);
@@ -962,6 +963,14 @@ static void findMax(GRBModel &model)
 	model.update();
 	//model.write(out_dir+"/debug.lp");
 	model.optimize();
+
+	// output DCJ
+	ofstream fout(out_dir+"/DCJ.txt");
+	int length = 0;
+	for (auto mv: markerVars)
+		length += (1 - (int)mv.get(GRB_DoubleAttr_X));
+	fout << format("length(N): {:>5}\n", length/2);
+	fout << format("cycles(C): {:>5}\n", cycleSum.getValue());
 }
 
 static void showResult()
@@ -1127,6 +1136,10 @@ int ilp_old(string refPath, string tarPath, string outDir, Mode mode, int gap, i
 		GRBEnv env = GRBEnv(true);
 		env.set("LogToConsole", "0");
 		env.set("LogFile", outDir+"/gurobi.log");
+		// shao's config
+		// env.set(GRB_DoubleParam_Heuristics, 0.5);
+		// env.set(GRB_IntParam_MIPFocus, 1);
+
 		env.start();
 		GRBModel model = GRBModel(env);
 		//model.set("TimeLimit","120");

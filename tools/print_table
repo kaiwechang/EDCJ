@@ -13,7 +13,7 @@ def read_files(tar_dir, data, info, mode):
 			organ = int(inv)
 		for ref in os.listdir(organ_path):
 			for method in os.listdir("%s/%s"%(organ_path, ref)):
-				if method == "analysis.txt":
+				if method in ["analysis.txt", "DCJ.txt"]:
 					continue
 				if organ not in data:
 					data[organ] = {}
@@ -47,8 +47,9 @@ def read_files(tar_dir, data, info, mode):
 							"ref": int(lines[2].split()[1]),
 							"tar": int(lines[2].split()[2])
 						},
-						"dup_rate":  float(lines[4].split()[1]),
-						"dist_rate": float(lines[5].split()[1])
+						"distance":    float(lines[4].split()[1]),
+						"dup_rate":	   float(lines[5].split()[1]),
+						"contig_rate": float(lines[6].split()[1])
 					}
 
 def write_file(tar_dir, data, info, mode):
@@ -81,7 +82,7 @@ def write_file(tar_dir, data, info, mode):
 					target = info[organ][ref]
 					file.write(" %7d | %7d |"%(target["marker"]["ref"], target["marker"]["tar"]))
 					file.write(" %7d | %7d |"%(target["contig"]["ref"], target["contig"]["tar"]))
-					file.write(" %7.3f | %7.3f |"%(target["dup_rate"], target["dist_rate"]))
+					file.write(" %7.3f | %7d |"%(target["dup_rate"], target["distance"]))
 					file.write("\n")
 
 	with open("%s/better.txt"%tar_dir, "w") as file:
@@ -98,7 +99,7 @@ def write_file(tar_dir, data, info, mode):
 				if target["EBD"]["time"] > target["EDCJ"]["time"]:
 					file.write("%10s %15s %7.3f %7.3f\n"%(organ, ref, target["EBD"]["time"], target["EDCJ"]["time"]))
 
-def draw_plot(tar_dir, data, item):
+def draw_plot(tar_dir, item, data):
 	inv_list = sorted(data)
 	sub_list = sorted(data[inv_list[0]])
 	method_list = sorted(data[inv_list[0]][sub_list[0]])
@@ -123,10 +124,10 @@ def draw_plot(tar_dir, data, item):
 	plt.legend(loc="best", labels=method_list)
 	plt.savefig("%s/%s.png"%(tar_dir, item))
 
-def draw_analysis_plot(plot_name, data, info):
+def draw_analysis_plot(tar_dir, item, data, info):
 	plt.figure()
-	plt.title(plot_name[:-4])
-	plt.xlabel("Distance Rate")
+	plt.title("Analysis of %s"%tar_dir)
+	plt.xlabel("DCJ Distance" if item == "distance" else "Contig Rate")
 	plt.ylabel("Duplication Rate")
 	#plt.xlim([0, 1])
 	plt.ylim([1, 2])
@@ -135,16 +136,15 @@ def draw_analysis_plot(plot_name, data, info):
 		for ref in info[organ]:
 			targetI = info[organ][ref]
 			targetD = data[organ][ref]
-			#plt.scatter(target["dist_rate"]/(target["marker"]["ref"]+target["marker"]["tar"]), target["dup_rate"])
-			plt.scatter(targetI["dist_rate"], targetI["dup_rate"],
+			#plt.scatter(target[item]/(target["marker"]["ref"]+target["marker"]["tar"]), target["dup_rate"])
+			plt.scatter(targetI[item], targetI["dup_rate"],
 				color="red" if targetD["EBD"]["f_score"] < targetD["EDCJ"]["f_score"] else
 				"purple" if targetD["EBD"]["time"] > targetD["EDCJ"]["time"] else "blue")
 	temp = plt.legend(loc="best", labels=["better", "worse", "faster"])
 	temp.legend_handles[0].set_color("red")
 	temp.legend_handles[1].set_color("blue")
 	temp.legend_handles[2].set_color("purple")
-	plt.savefig(plot_name)
-
+	plt.savefig("%s/analysis_%s.png"%(tar_dir, item))
 
 def main():
 	if len(sys.argv) < 2:
@@ -163,8 +163,9 @@ def main():
 	#print(json.dumps(data, sort_keys=True, indent=4))
 	if mode == "sim":
 		for item in ["time", "scaff", "sens", "prec", "f_score"]:
-			draw_plot(tar_dir, data, item)
-	draw_analysis_plot("%s/analysis.png"%tar_dir, data, info)
+			draw_plot(tar_dir, item, data)
+	for item in ["distance", "contig_rate"]:
+		draw_analysis_plot(tar_dir, item, data, info)
 
 if __name__ == "__main__":
 	main()
