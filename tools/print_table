@@ -89,8 +89,8 @@ def write_file(tar_dir, data, info, mode):
 		for organ in info:
 			for ref in info[organ]:
 				target = data[organ][ref]
-				if target["EBD"]["f_score"] < target["EDCJ"]["f_score"]:
-					file.write("%10s %15s %7.3f %7.3f\n"%(organ, ref, target["EBD"]["f_score"], target["EDCJ"]["f_score"]))
+				if target["EBD"]["sens"] < target["EDCJ"]["sens"]:
+					file.write("%10s %15s %7.3f %7.3f\n"%(organ, ref, target["EBD"]["sens"], target["EDCJ"]["sens"]))
 
 	with open("%s/faster.txt"%tar_dir, "w") as file:
 		for organ in info:
@@ -127,18 +127,25 @@ def draw_plot(tar_dir, item, data):
 def draw_analysis_plot(tar_dir, item, data, info):
 	plt.figure()
 	plt.title("Analysis of %s"%tar_dir)
-	plt.xlabel("DCJ Distance" if item == "distance" else "Contig Rate")
-	plt.ylabel("Duplication Rate")
+	match item:
+		case "distance":
+			plt.xlabel("DCJ Distance")
+		case "dup_rate":
+			plt.xlabel("Duplication Rate")
+		case "contig_rate":
+			plt.xlabel("Contig Rate")
+	plt.ylabel("Sensitivity")
 	#plt.xlim([0, 1])
-	plt.ylim([1, 2])
+	#plt.ylim([-0.5, 0.5])
+	#plt.axhline(0, color='black')
 	plt.grid(True)
 	for organ in info:
 		for ref in info[organ]:
 			targetI = info[organ][ref]
 			targetD = data[organ][ref]
 			#plt.scatter(target[item]/(target["marker"]["ref"]+target["marker"]["tar"]), target["dup_rate"])
-			plt.scatter(targetI[item], targetI["dup_rate"],
-				color="red" if targetD["EBD"]["f_score"] < targetD["EDCJ"]["f_score"] else
+			plt.scatter(targetI[item], targetD["EDCJ"]["sens"]-targetD["EBD"]["sens"],
+				color="red" if targetD["EBD"]["sens"] < targetD["EDCJ"]["sens"] else
 				"purple" if targetD["EBD"]["time"] > targetD["EDCJ"]["time"] else "blue")
 	temp = plt.legend(loc="best", labels=["better", "worse", "faster"])
 	temp.legend_handles[0].set_color("red")
@@ -164,7 +171,7 @@ def main():
 	if mode == "sim":
 		for item in ["time", "scaff", "sens", "prec", "f_score"]:
 			draw_plot(tar_dir, item, data)
-	for item in ["distance", "contig_rate"]:
+	for item in ["distance", "dup_rate", "contig_rate"]:
 		draw_analysis_plot(tar_dir, item, data, info)
 
 if __name__ == "__main__":

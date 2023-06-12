@@ -49,7 +49,7 @@ def count_dup(family_count):
 	#print(json.dumps(family_count_rev, sort_keys=True, indent=4))
 
 	fcr_list = family_count_rev.items()
-	return sum([k*v for k, v in fcr_list])/sum([v for k, v in fcr_list])/2
+	return sum([k*v for k, v in fcr_list])/sum([v for k, v in fcr_list])
 
 def cal_dist(filename, family_num):
 	with open(filename, "r") as file:
