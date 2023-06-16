@@ -53,8 +53,8 @@ def count_dup(family_count):
 
 def cal_dist(filename, family_num):
 	with open(filename, "r") as file:
-		length = int(file.readline().split()[1])
-		cycles = int(file.readline().split()[1])
+		length = round(float(file.readline().split()[1]))
+		cycles = round(float(file.readline().split()[1]))
 	#return (length - cycles) / length
 	return length - cycles
 
@@ -64,14 +64,12 @@ def write_file(filename,
 		dup_rate, distance):
 	with open(filename, "w") as file:
 		file.write("          ref   tar\n")
-		file.write("marker: %5d %5d\n"%(ref_marker_num, ref_contig_num))
-		file.write("contig: %5d %5d\n"%(tar_marker_num, tar_contig_num))
+		file.write("marker: %5d %5d\n"%(ref_marker_num, tar_marker_num))
+		file.write("contig: %5d %5d\n"%(ref_contig_num, tar_contig_num))
 		file.write("\n")
-		file.write("distance:    %7d\n"%distance)
-		file.write("dup_rate:    %7.3f\n"%dup_rate)
-		#file.write("dist_rate:   %7.3f\n"%dist_rate)
-		file.write("contig_rate: %7.3f\n"%(tar_contig_num/ref_contig_num))
-		#file.write("contig_len: %7.3f\n"%(tar_marker_num/tar_contig_num))
+		file.write("distance:   %7d\n"%distance)
+		file.write("dup_rate:   %7.3f\n"%dup_rate)
+		file.write("contig_len: %7.3f\n"%(tar_marker_num/tar_contig_num))
 
 def main():
 	if len(sys.argv) < 4:

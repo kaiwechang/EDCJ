@@ -3,13 +3,16 @@
 import os, sys
 import matplotlib.pyplot as plt
 
-def read_files(tar_dir, data, info, mode):
+def read_files(tar_dir, data, info, mode, test):
 	for organ in os.listdir(tar_dir):
 		if not os.path.isdir("%s/%s"%(tar_dir, organ)):
 			continue
 		organ_path = "%s/%s"%(tar_dir, organ)
 		if mode == "sim":
-			_, _, inv, _, _, _, _ = organ.split("_")
+			if test == "contig":
+				_, _, _, _, _, _, inv = organ.split("_")
+			else:
+				_, _, inv, _, _, _, _ = organ.split("_")
 			organ = int(inv)
 		for ref in os.listdir(organ_path):
 			for method in os.listdir("%s/%s"%(organ_path, ref)):
@@ -49,7 +52,7 @@ def read_files(tar_dir, data, info, mode):
 						},
 						"distance":    float(lines[4].split()[1]),
 						"dup_rate":	   float(lines[5].split()[1]),
-						"contig_rate": float(lines[6].split()[1])
+						"contig_len": float(lines[6].split()[1])
 					}
 
 def write_file(tar_dir, data, info, mode):
@@ -99,15 +102,28 @@ def write_file(tar_dir, data, info, mode):
 				if target["EBD"]["time"] > target["EDCJ"]["time"]:
 					file.write("%10s %15s %7.3f %7.3f\n"%(organ, ref, target["EBD"]["time"], target["EDCJ"]["time"]))
 
-def draw_plot(tar_dir, item, data):
-	inv_list = sorted(data)
+def draw_plot(tar_dir, item, data, test):
+	inv_list = sorted(data)[::-1] if test == "dup" else sorted(data)
 	sub_list = sorted(data[inv_list[0]])
 	method_list = sorted(data[inv_list[0]][sub_list[0]])
 
 	plt.figure()
 	plt.title(tar_dir)
-	plt.xticks(range(len(inv_list)), inv_list)
-	plt.xlabel("Inversion (%)")
+
+	match test:
+		case "original":
+			plt.xticks(range(len(inv_list)), inv_list)
+			plt.xlabel("Inversion (%)")
+		case "inv":
+			plt.xticks(range(len(inv_list)), [10*i for i in range(11)])
+			plt.xlabel("# of Inversions")
+		case "dup":
+			plt.xticks(range(len(inv_list)), [10*i for i in range(11)])
+			plt.xlabel("# of Duplications")
+		case "contig":
+			plt.xticks(range(len(inv_list)), inv_list)
+			plt.xlabel("# of Contigs")
+
 	item_label = {
 		"scaff": "# of Scaffolds", 
 		"time": "Time (sec)", 
@@ -124,7 +140,7 @@ def draw_plot(tar_dir, item, data):
 	plt.legend(loc="best", labels=method_list)
 	plt.savefig("%s/%s.png"%(tar_dir, item))
 
-def draw_analysis_plot(tar_dir, item, data, info):
+def draw_analysis_plot(tar_dir, item, data, info, test):
 	plt.figure()
 	plt.title("Analysis of %s"%tar_dir)
 	match item:
@@ -132,12 +148,14 @@ def draw_analysis_plot(tar_dir, item, data, info):
 			plt.xlabel("DCJ Distance")
 		case "dup_rate":
 			plt.xlabel("Duplication Rate")
-		case "contig_rate":
-			plt.xlabel("Contig Rate")
-	plt.ylabel("Sensitivity")
-	#plt.xlim([0, 1])
-	#plt.ylim([-0.5, 0.5])
-	#plt.axhline(0, color='black')
+			if test == "inv":
+				plt.xlim([2, 3])
+		case "contig_len":
+			plt.xlabel("Contig Length")
+			if test == "inv":
+				plt.xlim([20, 30])
+	plt.ylabel("Sensitivity Difference")
+	plt.axhline(y=0, linewidth=0.5, color='black')
 	plt.grid(True)
 	for organ in info:
 		for ref in info[organ]:
@@ -159,20 +177,21 @@ def main():
 
 	info = {}
 	data = {}
+	test = "original" if len(sys.argv) < 3 else sys.argv[2]
 	tar_dir = sys.argv[1]
 
 	mode = "sim" if os.listdir(tar_dir)[0][0:3] == "sim" else "real"
 
-	read_files(tar_dir, data, info, mode)
+	read_files(tar_dir, data, info, mode, test)
 	write_file(tar_dir, data, info, mode)
 	# data check
 	#import json
 	#print(json.dumps(data, sort_keys=True, indent=4))
 	if mode == "sim":
 		for item in ["time", "scaff", "sens", "prec", "f_score"]:
-			draw_plot(tar_dir, item, data)
-	for item in ["distance", "dup_rate", "contig_rate"]:
-		draw_analysis_plot(tar_dir, item, data, info)
+			draw_plot(tar_dir, item, data, test)
+	for item in ["distance", "dup_rate", "contig_len"]:
+		draw_analysis_plot(tar_dir, item, data, info, test)
 
 if __name__ == "__main__":
 	main()
