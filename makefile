@@ -1,7 +1,7 @@
 SHELL = /usr/bin/bash	# for array
 
 CXX = g++
-CXXFLAGS = -O3 -m64 -std=c++20 -lm -lfmt
+CXXFLAGS = -O3 -m64 -std=c++20 -lm -lfmt -fmax-errors=1
 MAKEFLAGS = -j $$(nproc --all)
 GUROBI_FLAGS = -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib -lgurobi_c++ -lgurobi100
 
@@ -66,7 +66,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/sim_1000_contig")
+	$(eval test_base="../testcase/HS_100")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
 			out_base=$(OUT_DIR)/$$dir/$$sub;		\
@@ -88,8 +88,12 @@ analyze: | $(OUT_DIR)
 	#../related/GREDU/bin/dcj $(TEST_DIR)/reference.all $(TEST_DIR)/target.all 100
 	$(TOOL_DIR)/analyze_data $(TEST_DIR)/reference.all $(TEST_DIR)/target.all $(OUT_DIR)
 
+human: $(BIN_DIR)/cut_all
+	mkdir -p testcase
+	$(BIN_DIR)/cut_all ../testcase/HS_100/HS/ch14 testcase
+
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/CSAR_data")
+	$(eval test_base="../testcase/EBD_data")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
@@ -129,13 +133,13 @@ gen_sim: $(BIN_DIR)/simulator
 	#R=(  0  17  29  38  44  50  55  58  62  64  67);	\
 	#T=( 50  50  50  50  50  50  50  50  50  50  50);	\
 	# 5. dup: 0~100, inv: 50, contig: 50;				\
-	#M=( 50  60  70  80  90 100 110 120 130 140 150);	\
-	#R=(100  83  71  63  56  50  45  42  38  36  33);	\
-	#T=( 50  50  50  50  50  50  50  50  50  50  50);	\
+	M=( 50  60  70  80  90 100 110 120 130 140 150);	\
+	R=(100  83  71  63  56  50  45  42  38  36  33);	\
+	T=( 50  50  50  50  50  50  50  50  50  50  50);	\
 	# 6. dup: 50, inv: 50, contig: 50~150;				\
-	M=(100 100 100 100 100 100 100 100 100 100 100);	\
-	R=( 50  50  50  50  50  50  50  50  50  50  50);	\
-	T=( 50  60  70  80  90 100 110 120 130 140 150);	\
+	#M=(100 100 100 100 100 100 100 100 100 100 100);	\
+	#R=( 50  50  50  50  50  50  50  50  50  50  50);	\
+	#T=( 50  60  70  80  90 100 110 120 130 140 150);	\
 	for idx in {0..10}; do			\
 		evo=$${M[$$idx]};			\
 		inv=$${R[$$idx]};			\

@@ -65,7 +65,7 @@ def write_file(tar_dir, data, info, mode):
 		for item in item_list:
 			file.write("%8s |"%item)
 		file.write(" %*s marker | %*s contig |"%(10, "", 10, ""))
-		file.write("     dup |    dist |")
+		file.write("     dup |    dist | con_len |")
 		file.write("\n")
 		# content
 		for organ in sorted(data):
@@ -74,7 +74,7 @@ def write_file(tar_dir, data, info, mode):
 				file.write("-%s-+-%s-+--------+"%("-"*org_len, "-"*ref_len))
 				for item in item_list:
 					file.write("---------+")
-				for i in range(6):
+				for i in range(7):
 					file.write("---------+")
 				file.write("\n")
 				# line end
@@ -85,7 +85,7 @@ def write_file(tar_dir, data, info, mode):
 					target = info[organ][ref]
 					file.write(" %7d | %7d |"%(target["marker"]["ref"], target["marker"]["tar"]))
 					file.write(" %7d | %7d |"%(target["contig"]["ref"], target["contig"]["tar"]))
-					file.write(" %7.3f | %7d |"%(target["dup_rate"], target["distance"]))
+					file.write(" %7.3f | %7d | %7.3f |"%(target["dup_rate"], target["distance"], target["contig_len"]))
 					file.write("\n")
 
 	with open("%s/better.txt"%tar_dir, "w") as file:
