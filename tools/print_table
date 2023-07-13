@@ -28,31 +28,47 @@ def read_files(tar_dir, data, info, mode, test):
 					data[organ][ref][method] = {}
 				# exec time
 				with open("%s/%s/%s/time.txt"%(organ_path, ref, method)) as file:
-					data[organ][ref][method]["time"] = float(file.readline())
+					line = file.readline()
+					data[organ][ref][method]["time"] = 999 if line.split()[0] == "Command" else float(line)
 				# prec
-				with open("%s/%s/%s/evaulate.txt"%(organ_path, ref, method)) as file:
-					lines = file.readlines()
-					data[organ][ref][method] |= {
-						"scaff": int(lines[0].split()[1]),
-						"sens": float(lines[4].split()[1]),
-						"prec": float(lines[5].split()[1]),
-						"f_score": float(lines[6].split()[1])
-					}
+				try:
+					with open("%s/%s/%s/evaulate.txt"%(organ_path, ref, method)) as file:
+						lines = file.readlines()
+						data[organ][ref][method] |= {
+							"scaff": int(lines[0].split()[1]),
+							"sens": float(lines[4].split()[1]),
+							"prec": float(lines[5].split()[1]),
+							"f_score":float(lines[6].split()[1])
+						}
+				except:
+						data[organ][ref][method] |= {
+							"scaff": 999, "sens": 999, "prec": 999, "f_score": 999
+						}
 				# data analysis
 				info_path = "%s/%s/analysis.txt"%(organ_path, ref)
-				with open(info_path) as file:
-					lines = file.readlines()
+				if os.path.exists(info_path):
+					with open(info_path) as file:
+						lines = file.readlines()
+						info[organ][ref] |= {
+							"marker": {
+								"ref": int(lines[1].split()[1]),
+								"tar": int(lines[1].split()[2])
+							}, "contig": {
+								"ref": int(lines[2].split()[1]),
+								"tar": int(lines[2].split()[2])
+							},
+							"distance":    float(lines[4].split()[1]),
+							"dup_rate":	   float(lines[5].split()[1]),
+							"contig_len": float(lines[6].split()[1])
+						}
+				else:
 					info[organ][ref] |= {
 						"marker": {
-							"ref": int(lines[1].split()[1]),
-							"tar": int(lines[1].split()[2])
+							"ref": 999, "tar": 999
 						}, "contig": {
-							"ref": int(lines[2].split()[1]),
-							"tar": int(lines[2].split()[2])
+							"ref": 999, "tar": 999
 						},
-						"distance":    float(lines[4].split()[1]),
-						"dup_rate":	   float(lines[5].split()[1]),
-						"contig_len": float(lines[6].split()[1])
+						"distance": 999, "dup_rate": 999, "contig_len": 999
 					}
 
 def write_file(tar_dir, data, info, mode):

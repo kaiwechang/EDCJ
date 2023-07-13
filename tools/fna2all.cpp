@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
 	string outDir(argv[3]);
 
 	string command =
-		format("Sibelia -k tools/parameter/paraset_bacterial -m 100 {} {} -o {}", refFNA, tarFNA, outDir);
+		format("Sibelia -k tools/parameter/paraset_bacterial -m 50 {} {} -o {}", refFNA, tarFNA, outDir);
 	//	format("Sibelia -s far -m 20 {} {} -o {}", refFNA, tarFNA, outDir);
 	if (system(command.c_str()) != 0) {
 		print("[error] Cannot execute Sibelia commands!!\n");

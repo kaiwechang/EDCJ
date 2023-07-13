@@ -66,7 +66,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/HS_100")
+	$(eval test_base="../testcase/semi_BT_50")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
 			out_base=$(OUT_DIR)/$$dir/$$sub;		\
@@ -88,14 +88,27 @@ analyze: | $(OUT_DIR)
 	#../related/GREDU/bin/dcj $(TEST_DIR)/reference.all $(TEST_DIR)/target.all 100
 	$(TOOL_DIR)/analyze_data $(TEST_DIR)/reference.all $(TEST_DIR)/target.all $(OUT_DIR)
 
-human: $(BIN_DIR)/cut_all
+human: $(BIN_DIR)/cut_human
 	mkdir -p testcase
-	$(BIN_DIR)/cut_all ../testcase/HS_100/HS/ch14 testcase
+	$(BIN_DIR)/cut_human ../testcase/HS_100/HS/ch14 testcase
+
+gen_semi: $(BIN_DIR)/cut_semi
+	cmp=../testcase/semi_data/BT/GCA_001718635.1_ASM171863v1_genomic.fna;	\
+	for cut in 500; do					\
+		mkdir -p testcase/$$cut;			\
+		$(BIN_DIR)/cut_semi $$cmp $$cut testcase/$$cut;	\
+		mkdir -p testcase/$$cut/ref00;		\
+		cp $$cmp testcase/$$cut/ref00;		\
+		cmp_base=$$(dirname $$cmp);			\
+		for dir in $$(ls $$cmp_base); do	\
+			[ -d $$cmp_base/$$dir ] && cp -r $$cmp_base/$$dir testcase/$$cut/$$dir;	\
+		done;	\
+	done
 
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/EBD_data")
+	$(eval test_base="../testcase/semi_cut/BT")
 	for organ in $$(ls $(test_base)); do				\
-		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
+		tar=$$(ls $(test_base)/$$organ/*.fna);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
 		for dir in $$(ls $(test_base)/$$organ); do		\
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
