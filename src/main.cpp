@@ -6,14 +6,14 @@ namespace fs = std::filesystem;
 
 ofstream logFile;
 
-void readOptions(int argc, char* argv[], string& refPath, string& tarPath, string& outDir, Mode& mode, bool& extended, double& gap, int& procs, int& timelimit, bool& spd1, bool& spd3, bool& rewrite, bool& align, bool& capping) {
+void readOptions(int argc, char* argv[], string& refPath, string& tarPath, string& outDir, Mode& mode, bool& extended, double& gap, int& procs, int& timelimit, bool& spd1, bool& spd2, bool& rewrite, bool& align, bool& capping) {
 	char option;
 	while ((option = getopt(argc, argv, ":g:l:o:p:r:t:s:miexhacn")) != -1)
 		switch (option) {
 			case 'e':	mode = EDCJ;					break;
 			case 'i':	mode = IDCJ;					break;
 			case 'm':	mode = MMDCJ;					break;
-			case 'a':	align = true;					break;	// for debugging spd3R
+			case 'a':	align = true;					break;	// for debugging spd2R
 			case 'c':	capping = true;					break;	// for debugging capping
 			case 'n':	rewrite = true;					break;	// for debugging ilp_R
 			case 'x':	extended = true;				break;
@@ -23,8 +23,8 @@ void readOptions(int argc, char* argv[], string& refPath, string& tarPath, strin
 			case 'g':	gap = std::stod(optarg);		break;
 			case 'p':	procs = std::stoi(optarg);		break;
 			case 'l':	timelimit = std::stoi(optarg);	break;
-			case 's':	spd1 = optarg == "1" || optarg == "13" ? true : false;
-						spd3 = optarg == "3" || optarg == "13" ? true : false;
+			case 's':	spd1 = optarg == "1" || optarg == "12" ? true : false;
+						spd2 = optarg == "2" || optarg == "12" ? true : false;
 						break;
 			case 'h':	print(
 				"Usage:\n>>> ./DCJ_Scaffolder -r <ref genome> -t <tar genome> [optional options]\n\n"
@@ -92,12 +92,12 @@ int main(int argc, char* argv[]) {
 	double gap = -1;
 	int procs = -1, timelimit = -1;
 	string refPath, tarPath, outDir = "output";
-	bool extended = false, spd1 = true, spd3 = true;
+	bool extended = false, spd1 = true, spd2 = true;
 	bool rewrite = false, align = false, capping = false;
 	Mode mode = EDCJ;
 
 	readOptions(argc, argv, refPath, tarPath, outDir, mode, extended, gap, procs, timelimit,
-				spd1, spd3, rewrite, align, capping);
+				spd1, spd2, rewrite, align, capping);
 
 	//preprocess(refPath, tarPath, outDir);
 
@@ -109,12 +109,12 @@ int main(int argc, char* argv[]) {
 		tarPath = outDir + "/tar_spd1.all";
 	}
 
-	if (spd3) {
+	if (spd2) {
 		align == false ? 
-		speedup_3E	(refPath, tarPath, outDir, extended):
-		speedup_3ER	(refPath, tarPath, outDir, extended);
-		refPath = outDir + "/ref_spd3.all";
-		tarPath = outDir + "/tar_spd3.all";
+		speedup_2E	(refPath, tarPath, outDir, extended):
+		speedup_2ER	(refPath, tarPath, outDir, extended);
+		refPath = outDir + "/ref_spd2.all";
+		tarPath = outDir + "/tar_spd2.all";
 	}
 
 	rewrite == false ? capping == true ? 

@@ -44,7 +44,7 @@ run_ilp: DCJ_Scaffolder
 	$(TOOL_DIR)/misJoin_eval $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_spd3E: DCJ_Scaffolder
+run_spd2E: DCJ_Scaffolder
 	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR) -x
 	$(TOOL_DIR)/misJoin_eval $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
@@ -66,11 +66,11 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/semi_BT_50")
+	$(eval test_base="../testcase/NCBI_test_50")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
 			out_base=$(OUT_DIR)/$$dir/$$sub;		\
-			for method in EBD EDCJ spd3E; do		\
+			for method in EBD EDCJ spd2E; do		\
 				tar_dir=$$out_base/$$method;		\
 				mkdir -p $$tar_dir;					\
 				/usr/bin/time -f %e -o $$tar_dir/time.txt	\
@@ -106,9 +106,9 @@ gen_semi: $(BIN_DIR)/cut_semi
 	done
 
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/semi_cut/BT")
+	$(eval test_base="../testcase/NCBI_test/")
 	for organ in $$(ls $(test_base)); do				\
-		tar=$$(ls $(test_base)/$$organ/*.fna);		\
+		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
 		for dir in $$(ls $(test_base)/$$organ); do		\
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\

@@ -186,7 +186,7 @@ static void outputNewGenome(string refFile, string tarFile, auto& ref, auto& tar
 		fout << format("{} {} {} 1\n", m.id, m.family, m.contig);
 	}	fout.close();
 }
-int speedup_3E(string refPath, string tarPath, string outDir, bool extended) {
+int speedup_2E(string refPath, string tarPath, string outDir, bool extended) {
 	logFile.open(outDir+"/speedup_3.log");
 
 	int maxFamily = 0;
@@ -206,7 +206,7 @@ int speedup_3E(string refPath, string tarPath, string outDir, bool extended) {
 	tar = joinGenome(tar, tarTelos, tarDraft, tarOrder);
 
 	// output new ref/tar & mergeContigs
-	outputNewGenome(outDir+"/ref_spd3.all", outDir+"/tar_spd3.all", ref, tar, reorder);
+	outputNewGenome(outDir+"/ref_spd2.all", outDir+"/tar_spd2.all", ref, tar, reorder);
 	outputMergeContigs(outDir+"/ref_merge.txt", refDraft);
 	outputMergeContigs(outDir+"/tar_merge.txt", tarDraft);
 
