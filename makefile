@@ -66,7 +66,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/NCBI_test_50")
+	$(eval test_base="../testcase/sim_2000_100")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
 			out_base=$(OUT_DIR)/$$dir/$$sub;		\
@@ -125,6 +125,23 @@ gen_real: $(BIN_DIR)/fna2all
 	done
 
 gen_sim: $(BIN_DIR)/simulator
+	$(eval mkr=2000)
+	$(eval dup=5)
+	$(eval evo=200)
+	$(eval ref=1)
+	$(eval tar=100)
+	# <# initial markers> <inverse rate> <duplicate length> <# evolutions> <# ref contigs> <# tar contigs> <output_dir>
+	for inv in 0 10 20 30 40 50 60 70 80 90 100; do	\
+		for sub in 1 2 3 4 5; do					\
+			test_dir=testcase/sim_$(mkr)_$${inv}_$(dup)_$(evo)_$(ref)_$(tar)/$$sub;	\
+			mkdir -p $$test_dir;					\
+			$(BIN_DIR)/simulator $(mkr) $$inv $(dup) $(evo) $(ref) $(tar) $$test_dir;\
+			rm $$test_dir/*_process;				\
+		done										\
+	done;
+
+
+gen_sim_fix: $(BIN_DIR)/simulator
 	$(eval mkr=1000)
 	$(eval dup=5)
 	$(eval ref=1)
