@@ -107,13 +107,17 @@ void outputReducedContigs(string rmFile, auto& refContigs, auto& tarContigs) {
 	fout.close();
 }
 int main(int argc, char* argv[]) {
+	if (argc < 5) {
+		print("[error] Usage:\n>>> fna2all <ref FNA> <tar FNA> <m param> <output dir>\n");
+		return 1;
+	}
 	string refFNA(argv[1]);
 	string tarFNA(argv[2]);
-	string outDir(argv[3]);
+	string mParam(argv[3]);
+	string outDir(argv[4]);
 
 	string command =
-		format("Sibelia -k tools/parameter/paraset_bacterial -m 50 {} {} -o {}", refFNA, tarFNA, outDir);
-	//	format("Sibelia -s far -m 20 {} {} -o {}", refFNA, tarFNA, outDir);
+		format("Sibelia -k tools/parameter/paraset_bacterial -m {} {} {} -o {}", mParam, refFNA, tarFNA, outDir+"/sibelia");
 	if (system(command.c_str()) != 0) {
 		print("[error] Cannot execute Sibelia commands!!\n");
 		exit(1);
@@ -127,10 +131,17 @@ int main(int argc, char* argv[]) {
 	readFNA(refFNA, tarFNA, refContigs, tarContigs);
 
 	// read permutations & blocks
-	readPermu(outDir+"/genomes_permutations.txt", ref, tar, refContigs, tarContigs);
-	readBlock(outDir+"/blocks_coords.txt", refContigs, tarContigs, reorder);
+	readPermu(outDir+"/sibelia/genomes_permutations.txt", ref, tar, refContigs, tarContigs);
+	readBlock(outDir+"/sibelia/blocks_coords.txt", refContigs, tarContigs, reorder);
 
 	outputAll(outDir+"/reference.all", outDir+"/target.all", ref, tar, reorder);
 	outputReducedContigs(outDir+"/reduced.txt", refContigs, tarContigs);
+
+	// clean up
+	command = format("rm -r {}/sibelia", outDir);
+	if (system(command.c_str()) != 0) {
+		print("[error] Cannot remove Sibelia directory!!\n");
+		exit(1);
+	}
 	return 0;
 }

@@ -123,7 +123,7 @@ gen_semi: $(BIN_DIR)/cut_semi
 	done
 
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/DCJ_data")
+	$(eval test_base="../testcase/EBD_test")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
@@ -131,12 +131,8 @@ gen_real: $(BIN_DIR)/fna2all
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
 				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);					\
 				mkdir -p testcase/$$organ/$$dir;								\
-				$(BIN_DIR)/fna2all $$ref $$tar testcase/$$organ/$$dir/sibelia;	\
-				cp $$ans testcase/$$organ/$$dir/answerToAll;								\
-				mv testcase/$$organ/$$dir/sibelia/reference.all testcase/$$organ/$$dir/reference.all;	\
-				mv testcase/$$organ/$$dir/sibelia/target.all	testcase/$$organ/$$dir/target.all;		\
-				mv testcase/$$organ/$$dir/sibelia/reduced.txt	testcase/$$organ/$$dir/reduced.txt;		\
-				rm -r testcase/$$organ/$$dir/sibelia;	\
+				$(BIN_DIR)/fna2all $$ref $$tar 50 testcase/$$organ/$$dir;			\
+				cp $$ans testcase/$$organ/$$dir/answerToAll;					\
 			fi;											\
 		done;											\
 	done
