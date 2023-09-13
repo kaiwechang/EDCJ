@@ -66,7 +66,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/sim_2000_100")
+	$(eval test_base="../testcase/DCJ_50")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
 			out_base=$(OUT_DIR)/$$dir/$$sub;		\
@@ -88,6 +88,23 @@ analyze: | $(OUT_DIR)
 	#../related/GREDU/bin/dcj $(TEST_DIR)/reference.all $(TEST_DIR)/target.all 100
 	$(TOOL_DIR)/analyze_data $(TEST_DIR)/reference.all $(TEST_DIR)/target.all $(OUT_DIR)
 
+GC: $(BIN_DIR)/count_fna
+	#$(BIN_DIR)/count_fna ../testcase/LONG_data/NC_007651/ref00/NC_007651.fna
+	tar_dir="../testcase/LONG_data/NC_007651";		\
+	echo "tar: NC_007651 (draft)";					\
+	$(BIN_DIR)/count_fna ../testcase/LONG_data/NC_007651/contigMerged.v3.randOrd;	\
+	for dir in ref00 ref08 ref10 ref16 ref18; do	\
+		echo $$dir": "$$(find $$tar_dir/$$dir/*.fna -printf "%f\n");				\
+		$(BIN_DIR)/count_fna $$tar_dir/$$dir/*.fna;	\
+	done;											\
+	tar_dir="../testcase/LONG_data/NC_008149";		\
+	echo "tar: NC_008149 (draft)";					\
+	$(BIN_DIR)/count_fna ../testcase/LONG_data/NC_008149/contigMerged.v3.randOrd;	\
+	for dir in ref00 ref09 ref11 ref12 ref13; do	\
+		echo $$dir": "$$(find $$tar_dir/$$dir/*.fna -printf "%f\n");				\
+		$(BIN_DIR)/count_fna $$tar_dir/$$dir/*.fna;	\
+	done
+
 human: $(BIN_DIR)/cut_human
 	mkdir -p testcase
 	$(BIN_DIR)/cut_human ../testcase/HS_100/HS/ch14 testcase
@@ -106,7 +123,7 @@ gen_semi: $(BIN_DIR)/cut_semi
 	done
 
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/NCBI_test/")
+	$(eval test_base="../testcase/DCJ_data")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
