@@ -66,7 +66,7 @@ run_time: DCJ_Scaffolder | $(OUT_DIR)
 	TEST_DIR=$(TEST_DIR)
 
 experiment: DCJ_Scaffolder $(EBD_Scaffolder)
-	$(eval test_base="../testcase/DCJ_50")
+	$(eval test_base="../testcase/ALIGN_50")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
 			out_base=$(OUT_DIR)/$$dir/$$sub;		\
@@ -122,8 +122,19 @@ gen_semi: $(BIN_DIR)/cut_semi
 		done;	\
 	done
 
+gen_answer: $(BIN_DIR)/align
+	$(eval test_base="../testcase/ALIGN_data")
+	for organ in $$(ls $(test_base)); do				\
+		comp=$$(ls $(test_base)/$$organ/ref00/*.fna);	\
+		draft=$$(ls $(test_base)/$$organ/*.fna);		\
+		mkdir -p testcase/$$organ;						\
+		$(BIN_DIR)/align $$comp $$draft 90 80 testcase/$$organ;	\
+		cp testcase/$$organ/answerToAll $(test_base)/$$organ/;	\
+		cp testcase/$$organ/*.randOrd $(test_base)/$$organ/;	\
+	done
+
 gen_real: $(BIN_DIR)/fna2all
-	$(eval test_base="../testcase/EBD_test")
+	$(eval test_base="../testcase/ALIGN_data")
 	for organ in $$(ls $(test_base)); do				\
 		tar=$$(ls $(test_base)/$$organ/*.randOrd);		\
 		ans=$$(ls $(test_base)/$$organ/answerToAll);	\
@@ -131,7 +142,7 @@ gen_real: $(BIN_DIR)/fna2all
 			if [ -d $(test_base)/$$organ/$$dir ] && [ $$dir != "ext" ]; then	\
 				ref=$$(ls $(test_base)/$$organ/$$dir/*.fna);					\
 				mkdir -p testcase/$$organ/$$dir;								\
-				$(BIN_DIR)/fna2all $$ref $$tar 50 testcase/$$organ/$$dir;			\
+				$(BIN_DIR)/fna2all $$ref $$tar 50 testcase/$$organ/$$dir;		\
 				cp $$ans testcase/$$organ/$$dir/answerToAll;					\
 			fi;											\
 		done;											\
