@@ -3,8 +3,11 @@
 A DCJ-based genome scaffolder with maximum matching/intermediate/exemplar models.
 
 ### Requirements
-1. `Gurobi`, the ILP Optimizer
-2. `fmt` library, the modern cpp format library
+1. [`Gurobi`](https://www.gurobi.com/downloads/), the ILP Optimizer
+2. [`fmt`](https://github.com/fmtlib/fmt) library, the modern cpp format library
+- optional
+	- [`Sibelia`](https://github.com/bioinf/Sibelia), the synteny blocks (markers) finding tools
+	- [`MUMmer`](https://github.com/mummer4/mummer), the genome alignment tool
 
 ### Usage
 ```bash
