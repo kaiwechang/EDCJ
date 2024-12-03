@@ -3,7 +3,8 @@ SHELL = /usr/bin/bash	# for array
 CXX = g++
 CXXFLAGS = -O3 -m64 -std=c++20 -lm -lfmt -fmax-errors=1
 MAKEFLAGS = -j $$(nproc --all)
-GUROBI_FLAGS = -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib -lgurobi_c++ -lgurobi100
+GUROBI_VERSION = gurobi$(shell grep 'version=' ${GUROBI_HOME}/setup.py | head -n 1 | sed 's/version=//g' | sed 's/ //g' | sed 's/,//g' | sed 's/\"//g' | cut -d '.' -f1,2 --output-delimiter=" " | sed 's/ //g')
+GUROBI_FLAGS = -I$(GUROBI_HOME)/include -L$(GUROBI_HOME)/lib -lgurobi_c++ -l$(GUROBI_VERSION)
 
 SRC_DIR = src
 BIN_DIR = bin
@@ -12,6 +13,7 @@ TOOL_DIR = tools
 #TEST_DIR = ../testcase/EI_test
 #TEST_DIR = ../testcase/sim_smaller/sim1
 TEST_DIR = ../testcase/sim_1000/simdata1/sim_1000_30_5_100_1_30/5
+EXAMPLE = example
 
 TOOLS = $(patsubst $(TOOL_DIR)/%.cpp, $(BIN_DIR)/%, $(shell ls $(TOOL_DIR)/*.cpp))
 OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(BIN_DIR)/%.o, $(shell ls $(SRC_DIR)/*.cpp))
@@ -19,7 +21,7 @@ EBD_Scaffolder = ../related/EBD_Scaffolder/EBD_Scaffolder
 
 .SILENT:
 
-DCJ_Scaffolder: $(OBJECTS)
+EDCJ_Scaffolder: $(OBJECTS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(GUROBI_FLAGS)
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp $(SRC_DIR)/utils.h | $(BIN_DIR)
 	$(CXX) -c $< -o $@ $(CXXFLAGS) $(GUROBI_FLAGS)
@@ -34,18 +36,23 @@ $(EBD_Scaffolder):
 
 .PHONY: all clean mkdir experiment analyze run_* gen_*
 
-run_EDCJ: DCJ_Scaffolder
-	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR)
+run_example: EDCJ_Scaffolder
+	./EDCJ_Scaffolder -r $(EXAMPLE)/reference.all -t $(EXAMPLE)/target.all -o $(OUT_DIR)
+	$(TOOL_DIR)/misJoin_eval $(EXAMPLE)/answerToAll $(OUT_DIR)/scaffolds.txt	\
+	| tee $(OUT_DIR)/evaulate.txt
+
+run_EDCJ: EDCJ_Scaffolder
+	./EDCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR)
 	$(TOOL_DIR)/misJoin_eval $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_ilp: DCJ_Scaffolder
-	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR) -n
+run_ilp: EDCJ_Scaffolder
+	./EDCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/query.all -o $(OUT_DIR) -n
 	$(TOOL_DIR)/misJoin_eval $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_spd2E: DCJ_Scaffolder
-	./DCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR) -x
+run_spd2E: EDCJ_Scaffolder
+	./EDCJ_Scaffolder -r $(TEST_DIR)/reference.all -t $(TEST_DIR)/target.all -o $(OUT_DIR) -x
 	$(TOOL_DIR)/misJoin_eval $(TEST_DIR)/answerToAll $(OUT_DIR)/scaffolds.txt	\
 	| tee $(OUT_DIR)/evaulate.txt
 
@@ -59,13 +66,13 @@ run_EBD: $(EBD_Scaffolder) | $(OUT_DIR)
 	$(TOOL_DIR)/misJoin_eval $(TEST_DIR)/answerToAll $(OUT_DIR)/result/ScaffoldResult	\
 	| tee $(OUT_DIR)/evaulate.txt
 
-run_time: DCJ_Scaffolder | $(OUT_DIR)
+run_time: EDCJ_Scaffolder | $(OUT_DIR)
 	method=main;								\
 	/usr/bin/time -f %e -o $(OUT_DIR)/time.txt	\
 	make run_$$method OUT_DIR=$(OUT_DIR)		\
 	TEST_DIR=$(TEST_DIR)
 
-experiment: DCJ_Scaffolder $(EBD_Scaffolder)
+experiment: EDCJ_Scaffolder $(EBD_Scaffolder)
 	$(eval test_base="../testcase/ALIGN_50")
 	for dir in $$(ls $(test_base)); do				\
 		for sub in $$(ls $(test_base)/$$dir); do	\
@@ -207,4 +214,4 @@ gen_sim_fix: $(BIN_DIR)/simulator
 	done;
 
 clean:
-	@-rm -rf $(BIN_DIR) $(OUT_DIR) testcase DCJ_Scaffolder
+	@-rm -rf $(BIN_DIR) $(OUT_DIR) testcase EDCJ_Scaffolder
